@@ -20,55 +20,81 @@ clientes_df = pd.read_csv(os.path.join(ruta_bases, 'Clientes.csv'), delimiter = 
 inversionistas_df = pd.read_csv(os.path.join(ruta_bases, 'Inversionistas.csv'), delimiter = ';')
 
 #---------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------
 
 #VALIDAR ESTRUCTURA DE LOS DATAFRAME
 
-#CLIENTES:
+## Definir las columnas esperadas ANTES de la función de validación
 
-# Validar columnas de clientes_df:
+### Columnas esperadas para Clientes.csv
 
-clientes_columnas = ['ti_documento', 'nu_documento', 'nombre_cliente', 'email_cliente', 'telefono_cliente', 'direccion_cliente', 'id_pais_docu', 'id_ti_persona', 'ti_sexo', 'fe_nacimiento', 'nu_cant_pres', 'id_profesion', 'id_esta_civil', 'id_estado', 'id_cat_cliente']
+clientes_columnas = ['ti_documento', 'nu_documento', 'nombre_cliente', 'email_cliente', 'telefono_cliente', 'direccion_cliente', 'id_pais_docu', 'id_ti_persona', 'ti_sexo', 'fe_nacimiento', 'nu_cant_pres', 'id_profesion', 'id_esta_civil', 'id_estado', 'id_cat_cliente', 'fe_apertura', 'fe_aper_prim_cre']
 
-# Verificar si todas las columnas están presentes
+### Columnas esperadas para Inversionistas.csv
 
-if set(clientes_df.columns) != set(clientes_columnas):
+inversionistas_columnas = ['ti_documento', 'nu_documento', 'nombre_inversionista', 'email_inversionista', 'telefono_inversionista', 'direccion_inversionista', 'id_pais_docu', 'id_ti_persona', 'ti_sexo', 'fe_nacimiento', 'nu_cant_pres', 'id_profesion', 'id_esta_civil', 'id_estado', 'id_niv_inversionista' , 'fe_apertura', 'fe_aper_prim_inv']
 
-    # Mostrar las columnas faltantes y adicionales para mejor depuración
+#---------------------------------------------------------------------------------------------
 
-    columnas_faltantes_cli = set(clientes_columnas) - set(clientes_df.columns)
-    columnas_adicionales_cli = set(clientes_df.columns) - set(clientes_columnas)
+## Función para validar columnas
 
-    if columnas_faltantes_cli != 0:
-        print(f"Advertencia: Columnas faltantes en 'Clientes.csv': {columnas_faltantes}")
-    if columnas_adicionales_cli != 0:
-        print(f"Advertencia: Columnas adicionales en 'Clientes.csv': {columnas_adicionales}")
-    
-    raise ValueError(f"Las columnas del archivo Clientes.csv no coinciden con las esperadas.")
+def validar_columnas(df,columnas_esperadas, nombre_archivo):
 
-else:
-    print(emoji.emojize("La estructura de las columnas en 'Clientes.csv' es correcta :thumbs_up:"))
+    ### Validar por columnas por conjunto
 
-# Verificar si las columnas están en el mismo orden:
+    if set(df.columns) != set(columnas_esperadas):
 
-if clientes_df.columns.tolist() != clientes_columnas:
-    raise ValueError(f"Las columnas del archivo Clientes.csv no coinciden con las esperadas. "
-                     f"Actuales: {clientes_df.columns.tolist()}. "
-                     f"Esperadas: {clientes_columnas}")
-# Validar email:
+        #### Mostrar las columnas faltantes y adicionales para mejor depuración
+
+        columnas_faltantes = set(columnas_esperadas) - set(df.columns)
+        columnas_adicionales = set(df.columns) - set(columnas_esperadas)
+
+        if columnas_faltantes:
+            print(f"Advertencia: Columnas faltantes en '{nombre_archivo}': {columnas_faltantes}")
+
+        if columnas_adicionales:
+            print(f"Advertencia: Columnas adicionales en '{nombre_archivo}': {columnas_adicionales}")
+        
+        raise ValueError(emoji.emojize(f"Las columnas del archivo '{nombre_archivo}' no coinciden (en conjunto) con las esperadas. :double_exclamation_mark:"))
+
+    else:
+        print(emoji.emojize(f"La estructura de las columnas en '{nombre_archivo}' es correcta :thumbs_up:"))
+
+    ### Validar columnas por orden
+
+    if df.columns.tolist() != columnas_esperadas:
+        raise ValueError(emoji.emojize(f"Las columnas del archivo '{nombre_archivo}' no coinciden (en orden) con las esperadas. :double_exclamation_mark:"
+                     f"Actuales: {df.columns.tolist()}. "
+                     f"Esperadas: {columnas_esperadas}"))
+    ### Validar existencia de filas en el archivo .csv   
+     
+    if df.empty:
+        raise ValueError(emoji.emojize(f"El archivo '{nombre_archivo}' está vacío. :cross_mark:"))
+#---------------------------------------------------------------------------------------------
+
+## Función para validar email:
+
 def validar_email(email):
+
     patron = r'^[\w\.-]+@[\w\.-]+\.\w+$'
-    if not re.match(patron, email):
-        return False
-    return True
+    return bool(re.match(patron, email))
 
-# Aplicar validación a la columna de correos en clientes_df
+### Aplicar validación a la columna de correos en los dataframes
 
-emails_invalidos = clientes_df[~clientes_df['email_cliente'].apply(validar_email)]
-if not emails_invalidos.empty:
-    print("Advertencia: Los siguientes correos electrónicos son inválidos:")
-    print(emails_invalidos[['nombre_cliente', 'email_cliente']])
+def validar_emails(df, columna_email, nombre_archivo):
 
-# Validar fecha
+    emails_invalidos = df[~df[columna_email].apply(validar_email)]
+
+    if not emails_invalidos.empty:
+
+        print(emoji.emojize(f"Advertencia: Los siguientes correos electrónicos en '{nombre_archivo}' son inválidos :double_exclamation_mark: :"))
+
+        print(emails_invalidos[[columna_email]])
+
+#---------------------------------------------------------------------------------------------
+
+## Función para validar fecha:
+
 def validar_fecha(fecha):
     try:
         datetime.strptime(fecha, '%Y-%m-%d')
@@ -76,87 +102,61 @@ def validar_fecha(fecha):
     except ValueError:
         return False
 
-# Aplicar validación a la columna de fechas en clientes_df
-fechas_invalidas = clientes_df[~clientes_df['fe_nacimiento'].apply(validar_fecha)]
-if not fechas_invalidas.empty:
-    print("Advertencia: Las siguientes fechas son inválidas:")
-    print(fechas_invalidas[['nombre_cliente', 'fe_nacimiento']])
+### Aplicar validación a la columna de fechas en los dataframes
 
-# INVERSIONISTAS:
+def validar_fechas(df, columna_fecha, nombre_archivo, permitir_nat = False):
 
-#Validar columnas de inversionistas_columnas:
+    #### Identificar filas con fechas inválidas
 
-inversionistas_columnas = ['ti_documento', 'nu_documento', 'nombre_inversionista', 'email_inversionista', 'telefono_inversionista', 'direccion_inversionista', 'id_pais_docu', 'id_ti_persona', 'ti_sexo', 'fe_nacimiento', 'nu_cant_pres', 'id_profesion', 'id_esta_civil', 'id_estado', 'id_niv_inversionista']
+    fechas_invalidas = df[~df[columna_fecha].apply(validar_fecha)]
 
-# Verificar si todas las columnas están presentes
+    #### Si permitir_nat es True, las fechas inválidas serán reemplazadas con NaT (solo para columnas donde NaT es aceptable).
 
-if set(inversionistas_df.columns) != set(inversionistas_columnas):
+    if permitir_nat:
 
-    # Mostrar las columnas faltantes y adicionales para mejor depuración
+        ##### Reemplazar fechas inválidas con NaT si está permitido
 
-    columnas_faltantes_inv = set(inversionistas_columnas) - set(inversionistas_df.columns)
-    columnas_adicionales_inv = set(inversionistas_df.columns) - set(inversionistas_columnas)
+        df.loc[~df[columna_fecha].apply(validar_fecha), columna_fecha] = pd.NaT
 
-    if columnas_faltantes_inv != 0:
-        print(f"Advertencia: Columnas faltantes en 'Inversionistas.csv': {columnas_faltantes_inv}")
-    if columnas_adicionales_inv != 0:
-        print(f"Advertencia: Columnas adicionales en 'Inversionistas.csv': {columnas_adicionales_inv}")
+    #### Si hay fechas inválidas:
     
-    raise ValueError(f"Las columnas del archivo Inversionistas.csv no coinciden con las esperadas.")
-else:
-    print(emoji.emojize("La estructura de las columnas en 'Inversionistas.csv' es correcta :thumbs_up:"))
+    if (not permitir_nat and not fechas_invalidas.empty):
+        print(emoji.emojize(f"Advertencia: Las siguientes fechas en '{nombre_archivo}' son inválidas :double_exclamation_mark:"))
+        print(fechas_invalidas[[columna_fecha]])
 
-# Verificar si las columnas están en el mismo orden:
+    if (permitir_nat and not fechas_invalidas.empty) :
+        print(emoji.emojize(f"Las fechas inválidas han sido reemplazadas con NaT en '{nombre_archivo}' :thumbs_up:"))
+        print(fechas_invalidas[[columna_fecha]])
 
-if inversionistas_df.columns.tolist() != inversionistas_columnas:
-    raise ValueError(f"Las columnas del archivo Inversionistas.csv no coinciden con las esperadas. "
-                     f"Actuales: {inversionistas_df.columns.tolist()}. "
-                     f"Esperadas: {inversionistas_columnas}")
+#---------------------------------------------------------------------------------------------
 
-# Validar email:
-def validar_email(email):
-    patron = r'^[\w\.-]+@[\w\.-]+\.\w+$'
-    if not re.match(patron, email):
-        return False
-    return True
 
-# Aplicar validación a la columna de correos en inversionistas_df
+## Validar columnas
 
-emails_invalidos = inversionistas_df[~inversionistas_df['email_inversionista'].apply(validar_email)]
-if not emails_invalidos.empty:
-    print("Advertencia: Los siguientes correos electrónicos son inválidos:")
-    print(emails_invalidos[['nombre_inversionista', 'email_inversionista']])
+validar_columnas(clientes_df, clientes_columnas, "Clientes.csv")
+validar_columnas(inversionistas_df, inversionistas_columnas, "Inversionistas.csv")
 
-# Validar fecha
-def validar_fecha(fecha):
-    try:
-        datetime.strptime(fecha, '%Y-%m-%d')
-        return True
-    except ValueError:
-        return False
+## Validar emails
 
-# Aplicar validación a la columna de fechas en inversionistas_df
-fechas_invalidas = inversionistas_df[~inversionistas_df['fe_nacimiento'].apply(validar_fecha)]
-if not fechas_invalidas.empty:
-    print("Advertencia: Las siguientes fechas son inválidas:")
-    print(fechas_invalidas[['nombre_inversionista', 'fe_nacimiento']])
-# #-------------------------------------------------------------------------------------------------
+validar_emails(clientes_df, 'email_cliente', "Clientes.csv")
+validar_emails(inversionistas_df, 'email_inversionista', "Inversionistas.csv")
 
-# # GARANTIZAR ORDEN PARA BULK INSERT
+## Validar fechas
 
-# # Orden correcto de columnas para coincidir con la tabla en SQL Server
-# clientes_ordenadas_columnas = ['ti_documento', 'nu_documento', 'nombre_cliente', 'email_cliente',
-#                                'telefono_cliente', 'direccion_cliente', 'id_pais_docu', 'id_ti_persona',
-#                                'ti_sexo', 'fe_nacimiento', 'nu_cant_pres', 'id_profesion',
-#                                'id_esta_civil', 'id_estado', 'id_cat_cliente']
+### Validar fechas para 'fe_nacimiento' (permitimos NaT para fechas de nacimiento)
 
-# # Reorganizar las columnas en el DataFrame
-# clientes_df = clientes_df[clientes_ordenadas_columnas]
+validar_fechas(clientes_df, 'fe_nacimiento', "Clientes.csv", permitir_nat=True)
+validar_fechas(inversionistas_df, 'fe_nacimiento', "Inversionistas.csv", permitir_nat=True)
 
-# # Escribir el archivo CSV en el orden correcto
-# clientes_df.to_csv(os.path.join(ruta_bases, 'Clientes_reorganizado.csv'), sep=';', index=False)
+### Validar fechas en otras columnas donde NO se permite NaT
+
+validar_fechas(clientes_df, 'fe_apertura', "Clientes.csv", permitir_nat=False)
+validar_fechas(clientes_df, 'fe_aper_prim_cre', "Clientes.csv", permitir_nat=False)
+
+validar_fechas(inversionistas_df, 'fe_apertura', "Inversionistas.csv", permitir_nat=False)
+validar_fechas(inversionistas_df, 'fe_aper_prim_inv', "Inversionistas.csv", permitir_nat=False)
 
 
 
-#print(clientes_df.columns)
-#print(clientes_columnas)
+#---------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------

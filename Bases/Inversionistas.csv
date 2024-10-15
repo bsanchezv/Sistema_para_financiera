@@ -1,2 +1,2 @@
-ti_documento;nu_documento;nombre_inversionista;email_inversionista;telefono_inversionista;direccion_inversionista;id_pais_docu;id_ti_persona;ti_sexo;fe_nacimiento;nu_cant_pres;id_profesion;id_esta_civil;id_estado;id_niv_inversionista
-01;65432123;Carlos Gómez;cgomez@gmail.com;987321654;Calle Azul 789;9589;1;M;1975-03-12;3;4;1;V;1
+ti_documento;nu_documento;nombre_inversionista;email_inversionista;telefono_inversionista;direccion_inversionista;id_pais_docu;id_ti_persona;ti_sexo;fe_nacimiento;nu_cant_pres;id_profesion;id_esta_civil;id_estado;id_niv_inversionista;fe_apertura;fe_aper_prim_inv
+01;65432123;Carlos Gómez;cgomez@gmail.com;987321654;Calle Azul 789;9589;1;M;1975-03-12;3;4;1;V;1;2023-11-01;2023-11-01
