@@ -1,9 +1,26 @@
+import os
 import pandas as pd
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+from dotenv import load_dotenv
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+# Cargar variables de entorno desde el archivo .env
 
-# Definir función para calcular el cronograma de cuotas del prestatario
+load_dotenv()
+
+# Obtener la API key de SendGrid
+
+sendgrid_api_key = os.getenv('SENDGRID_API_KEY')
+
+print("API Key:", sendgrid_api_key)  # Para asegurarte de que se cargó correctamente
+
+
+# Función para calcular el cronograma de cuotas del prestatario
 
 def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo):
    
@@ -20,20 +37,16 @@ def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fec
         fecha_inicio = datetime.strptime(fecha_inicio_prestamo, '%Y-%m-%d') # string parse time
     except ValueError as e:
         raise ValueError(f"La fecha de inicio del préstamo no tiene el formato correcto (YYYY-MM-DD): {e}")
+    
+    ## Calcular cuota mensual usando la fórmula de amortización
 
     cuotas = []
-
-    ## Calcular cuota mensual usando la fórmula de amortización
 
     cuota_mensual = (monto_prestamo * tasa_interes) / (1 - (1 + tasa_interes) ** -num_cuotas)
 
     saldo_pendiente = monto_prestamo
 
     for i in range(1, num_cuotas + 1): # num_cuotas iteraciones empezando en 1 y terminando en num_cuotas
-
-        ### Fecha de pago de cada cuota
-
-        fecha_pago = fecha_inicio + relativedelta(months = i)  # Sumar i meses a la fecha_inicio_prestamo
 
         ### Cálculo del interés por cada periodo:
 
@@ -46,6 +59,10 @@ def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fec
         ### Cálculo del saldo pendiente:
 
         saldo_pendiente -= capital_amortizado
+
+        ### Fecha de pago de cada cuota
+
+        fecha_pago = fecha_inicio + relativedelta(months = i)  # Sumar i meses a la fecha_inicio_prestamo
 
         ### Estructura del cronograma:
 
@@ -64,21 +81,79 @@ def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fec
     
     return pd.DataFrame(cuotas)
 
-# Generar el cronograma
+# Función para convertir el cronograma a una imagen:
+
+def cronograma_a_imagen(cronograma_df):
+    # Crear una figura y ejes con matplotlib
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Ocultar los ejes
+    ax.xaxis.set_visible(False)
+    ax.yaxis.set_visible(False)
+    ax.set_frame_on(False)
+
+    # Crear una tabla a partir del DataFrame y mostrarla
+    tabla = ax.table(cellText=cronograma_df.values, colLabels=cronograma_df.columns, cellLoc='center', loc='center')
+
+    # Ajustar el tamaño de las celdas
+    tabla.auto_set_font_size(False)
+    tabla.set_fontsize(10)
+    tabla.scale(1.2, 1.2)
+
+    # Guardar la imagen en un objeto BytesIO
+    image_buffer = BytesIO()
+    plt.savefig(image_buffer, format='png', bbox_inches='tight')
+    plt.close(fig)
+    
+    # Mover el puntero al inicio
+    image_buffer.seek(0)
+
+    return image_buffer
+
+# Función para enviar el correo con la imagen adjunta
+def enviar_correo_con_imagen(correo_destino, asunto, cuerpo, cronograma_df):
+    # Generar la imagen del cronograma
+    imagen_buffer = cronograma_a_imagen(cronograma_df)
+
+    # Convertir la imagen a base64
+    encoded_image = base64.b64encode(imagen_buffer.getvalue()).decode()
+
+    # Crear el mensaje
+    message = Mail(
+        from_email='prestamo.universal.pe@gmail.com',
+        to_emails=correo_destino,
+        subject=asunto,
+        html_content=cuerpo
+    )
+
+    # Crear el adjunto de imagen
+    attachment = Attachment(
+        FileContent(encoded_image),
+        FileName('cronograma.png'),
+        FileType('image/png'),
+        Disposition('attachment')
+    )
+
+    # Adjuntar la imagen al correo
+    message.add_attachment(attachment)
+
+    # Enviar el correo usando SendGrid
+    try:
+        sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
+        response = sg.send(message)
+        print(f"Correo enviado exitosamente con el estado: {response.status_code}")
+    except Exception as e:
+        print(f"Error al enviar el correo: {e}")
+
+# Generar el cronograma de ejemplo
 cronograma_df = generar_cronograma_prestatario(10000, 0.05, 12, '2024-10-31')
 
-# Mostrar el cronograma
+# Enviar el correo con el cronograma como imagen adjunta
+enviar_correo_con_imagen(
+    correo_destino='barbaragabriela2820@gmail.com',
+    asunto='Cronograma de Pagos del Préstamo',
+    cuerpo='<p>Adjunto encontrarás el cronograma de pagos del préstamo solicitado.</p>',
+    cronograma_df=cronograma_df
+)
+
 print(cronograma_df)
-
-# Exportar a Excel
-cronograma_df.to_excel('cronograma_prestamo.xlsx', index=False)
-
-
-import yagmail
-
-def enviar_correo(destinatario, asunto, cuerpo, adjuntos):
-    yag = yagmail.SMTP("barbaragabriela2820@gmail.com", "")
-    yag.send(to=destinatario, subject=asunto, contents=cuerpo, attachments=adjuntos)
-
-# Ejemplo de uso
-enviar_correo("destinatario@correo.com", "Cronograma de Préstamo", "Adjunto el cronograma de tu préstamo.", ["cronograma_prestamo.xlsx", "cronograma_prestamo.pdf"])
