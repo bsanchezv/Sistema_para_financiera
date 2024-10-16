@@ -156,7 +156,5 @@ validar_fechas(clientes_df, 'fe_aper_prim_cre', "Clientes.csv", permitir_nat=Fal
 validar_fechas(inversionistas_df, 'fe_apertura', "Inversionistas.csv", permitir_nat=False)
 validar_fechas(inversionistas_df, 'fe_aper_prim_inv', "Inversionistas.csv", permitir_nat=False)
 
-
-
 #---------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------
