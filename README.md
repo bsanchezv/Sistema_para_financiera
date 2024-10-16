@@ -8,3 +8,7 @@ Se usan las herramientas: Python, SQL Server, Power Automate, Ms. Excel, Power B
 # Vista previa de la DF (.csv) Validation  en Python (IDE: VsCode):
 
 ![Vista previa Validation](https://github.com/user-attachments/assets/56255a48-631e-4daa-943e-567e92d957bd)
+
+# Vista previa del payment_schedule en Python:
+
+![image](https://github.com/user-attachments/assets/e5d2dfdf-9337-489f-a43d-764542acdaf1)
