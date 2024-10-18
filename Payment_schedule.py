@@ -48,11 +48,11 @@ def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fec
 
         #### Cálculo del interés por cada periodo:
 
-        interes = saldo_pendiente * tasa_interes
+        interes_mensual = saldo_pendiente * tasa_interes
 
         #### Cálculo del capital amortiado
 
-        capital_amortizado = cuota_mensual - interes
+        capital_amortizado = cuota_mensual - interes_mensual
 
         #### Cálculo del saldo pendiente:
 
@@ -60,7 +60,7 @@ def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fec
 
         #### Cálculo del total de intereses:
         
-        total_intereses += interes
+        total_intereses += interes_mensual
 
         #### Fecha de pago de cada cuota
 
@@ -74,7 +74,7 @@ def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fec
 
             'Cuota': round(cuota_mensual, 2),
 
-            'Interés': round(interes, 2),
+            'Interés': round(interes_mensual, 2),
 
             'Capital': round(capital_amortizado, 2),
 

@@ -92,16 +92,22 @@ GO
 -- Tabla Categoria Cliente
 CREATE TABLE Categoria_cliente(
 	id_cat_cliente INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
-	de_cat_cliente VARCHAR(20) NOT NULL  /*VALIDAR*/
+	de_cat_cliente VARCHAR(20) NOT NULL,  /*VALIDAR*/
 );
 GO
 
 -- Tabla Nivel Inversionista
 CREATE TABLE Nivel_inversionista(
 	id_niv_inversionista INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
-	de_niv_inversionista VARCHAR(20) NOT NULL  /*VALIDAR*/
+	de_niv_inversionista VARCHAR(8) NOT NULL,
 );
 GO
+
+--Tabla Estado producto: Estado de la inversión o préstamo
+CREATE TABLE Estado_producto(
+	id_estado_producto INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
+	de_estado_producto VARCHAR(8)
+)
 
 -- Tabla Maestra Diaria Clientes
 CREATE TABLE MD_clientes(
@@ -117,16 +123,25 @@ CREATE TABLE MD_clientes(
 	id_ti_persona CHAR(1) FOREIGN KEY REFERENCES Tipo_persona(id_ti_persona),
 	ti_sexo CHAR(1) FOREIGN KEY REFERENCES Tipo_sexo(ti_sexo),
 	fe_nacimiento DATE,
-	nu_cant_pres INT NOT NULL,
+	cant_prestamos INT NOT NULL,
 	id_profesion INT FOREIGN KEY REFERENCES Profesion(id_profesion),
 	id_esta_civil INT FOREIGN KEY REFERENCES Estado_civil(id_esta_civil),
 	id_estado CHAR(1) FOREIGN KEY REFERENCES Estado(id_estado) NOT NULL,
 	id_cat_cliente INT FOREIGN KEY REFERENCES Categoria_cliente(id_cat_cliente) NOT NULL,
 	fe_apertura  DATE NOT NULL DEFAULT GETDATE(),
-	fe_aper_prim_cre DATE NOT NULL DEFAULT GETDATE(),
+	fe_aper_prim_prest DATE NOT NULL DEFAULT GETDATE(),
 	fe_actu_reg DATE NOT NULL DEFAULT GETDATE()
 );
 GO
+
+-- Índice en número de documento
+CREATE INDEX idx_nu_documento_cliente ON MD_clientes(nu_documento);
+
+-- Índice en email del cliente
+CREATE INDEX idx_email_cliente ON MD_clientes(email_cliente);
+
+-- Índice en estado del cliente
+CREATE INDEX idx_estado_cliente ON MD_clientes(id_estado);
 
 -- Tabla Maestra Diaria Inversionistas
 CREATE TABLE MD_inversionistas(
@@ -142,60 +157,93 @@ CREATE TABLE MD_inversionistas(
 	id_ti_persona CHAR(1) FOREIGN KEY REFERENCES Tipo_persona(id_ti_persona) NOT NULL,
 	ti_sexo CHAR(1) FOREIGN KEY REFERENCES Tipo_sexo(ti_sexo),
 	fe_nacimiento DATE,
-	nu_cant_pres INT NOT NULL,
+	cant_inversiones INT NOT NULL,
 	id_profesion INT FOREIGN KEY REFERENCES Profesion(id_profesion),
 	id_esta_civil INT FOREIGN KEY REFERENCES Estado_civil(id_esta_civil),
 	id_estado CHAR(1) FOREIGN KEY REFERENCES Estado(id_estado) NOT NULL,
 	id_niv_inversionista INT FOREIGN KEY REFERENCES Nivel_inversionista(id_niv_inversionista) NOT NULL,
 	fe_apertura  DATE NOT NULL DEFAULT GETDATE(),
-	fe_aper_prim_inv DATE NOT NULL DEFAULT GETDATE(),
+	fe_aper_prim_inver DATE NOT NULL DEFAULT GETDATE(),
 	fe_actu_reg DATE NOT NULL DEFAULT GETDATE()
 );
 GO
+
+-- Índice en número de documento
+CREATE INDEX idx_nu_documento_inversionista ON MD_inversionistas(nu_documento);
+
+-- Índice en email del inversionista
+CREATE INDEX idx_email_inversionista ON MD_inversionistas(email_inversionista);
+
+-- Índice en estado del inversionista
+CREATE INDEX idx_estado_inversionista ON MD_inversionistas(id_estado);
 
 -- Tabla maestra diaria de Prestamos
 CREATE TABLE MD_prestamos(
 	id_prestamo INT PRIMARY KEY IDENTITY(1,1),
     id_cliente INT FOREIGN KEY REFERENCES MD_clientes(id_cliente),
     monto_prestamo DECIMAL(18, 2) NOT NULL,
-    tasa_interes DECIMAL(5, 2) NOT NULL,
+    tasa_interes DECIMAL(7, 2) NOT NULL,
     num_cuotas INT NOT NULL,
     fecha_inicio_prestamo DATE NOT NULL,
-    monto_aprobado BIT NOT NULL DEFAULT 0,
+    --monto_aprobado BIT NOT NULL DEFAULT 0,
+	id_estado_producto INT FOREIGN KEY REFERENCES Estado_producto(id_estado_producto),
     fecha_registro DATE NOT NULL DEFAULT GETDATE()
 );
 GO
+
+-- Índice en id del cliente
+CREATE INDEX idx_id_cliente_prestamo ON MD_prestamos(id_cliente);
 
 -- Tabla Inversiones
 CREATE TABLE MD_inversiones (
     id_inversion INT PRIMARY KEY IDENTITY(1,1),
     id_inversionista INT FOREIGN KEY REFERENCES MD_inversionistas(id_inversionista),
     monto_inversion DECIMAL(18, 2) NOT NULL,
-    tasa_rendimiento DECIMAL(5, 2) NOT NULL,
+    tasa_rendimiento DECIMAL(7, 2) NOT NULL,
     num_desembolsos INT NOT NULL,
     fecha_inicio_inversion DATE NOT NULL,
-    inversion_aprobada BIT NOT NULL DEFAULT 0,
+    --inversion_aprobada BIT NOT NULL DEFAULT 0,
+	id_estado_producto INT FOREIGN KEY REFERENCES Estado_producto(id_estado_producto),
     fecha_registro DATE NOT NULL DEFAULT GETDATE()
 );
 GO
+
+-- Índice en id del inversionista
+CREATE INDEX idx_id_inversionista_inversion ON MD_inversiones(id_inversionista);
 
 -- Tabla Cronogramas_Cuotas
 CREATE TABLE Cronogramas_Cuotas (
     id_cronograma INT PRIMARY KEY IDENTITY(1,1),
     id_prestamo INT FOREIGN KEY REFERENCES MD_prestamos(id_prestamo),
     fecha_pago DATE NOT NULL,
-    monto_cuota DECIMAL(18, 2) NOT NULL
+    cuota_mensual DECIMAL(18, 2) NOT NULL,
+	interes_mensual DECIMAL(18, 2) NOT NULL,
+	saldo_pendiente DECIMAL(18, 2) NOT NULL
 );
 GO
+
+-- Índice en id del cliente
+CREATE INDEX idx_id_cliente_cuotas ON Cronogramas_Cuotas(id_cliente);
+
+-- Índice en fecha de pago
+CREATE INDEX idx_fecha_pago_cuotas ON Cronogramas_Cuotas(fecha_pago);
 
 -- Tabla Cronogramas_Desembolsos
 CREATE TABLE Cronogramas_Desembolsos (
     id_cronograma INT PRIMARY KEY IDENTITY(1,1),
     id_inversion INT FOREIGN KEY REFERENCES MD_inversiones(id_inversion),
     fecha_pago DATE NOT NULL,
-    monto_desembolso DECIMAL(18, 2) NOT NULL
+    desembolso_mensual DECIMAL(18, 2) NOT NULL,
 );
 GO
+
+-- Índice en id del inversionista
+CREATE INDEX idx_id_inversionista_desembolsos ON Cronogramas_Desembolsos(id_inversionista);
+
+-- Índice en fecha de pago
+CREATE INDEX idx_fecha_pago_desembolsos ON Cronogramas_Desembolsos(fecha_pago);
+
+---------------------------------------------------------------------------------------------------------
 
 /*INSERCIÓN DE DATOS INICIALES*/
 INSERT INTO Tipo_documento(ti_documento,de_larga_tipo_docu,de_tipo_docu)
@@ -619,3 +667,14 @@ VALUES
 	(5,'DIAMANTE');
 
 SET IDENTITY_INSERT Nivel_inversionista OFF;
+
+SET IDENTITY_INSERT Estado_producto ON;
+
+INSERT INTO Estado_producto(id_estado_producto,de_estado_producto)
+VALUES
+	(1, 'APROBADO'),
+	(2, 'RECHAZADO'),
+	(2, 'PENDIENTE DE APROBACIÓN'),
+)
+
+SET IDENTITY_INSERT Estado_producto OF;

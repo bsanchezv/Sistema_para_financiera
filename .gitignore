@@ -1,3 +1,7 @@
 # Ignora los archivos relacionados a API Keys:
 
 .env
+
+# Ignora los archivos relacionados a Word:
+
+.docx
