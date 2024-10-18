@@ -4,4 +4,4 @@
 
 # Ignora los archivos relacionados a Word:
 
-.docx
+*.docx
