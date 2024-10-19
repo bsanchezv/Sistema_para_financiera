@@ -106,7 +106,7 @@ GO
 --Tabla Estado producto: Estado de la inversión o préstamo
 CREATE TABLE Estado_producto(
 	id_estado_producto INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
-	de_estado_producto VARCHAR(8)
+	de_estado_producto VARCHAR(30)
 )
 
 -- Tabla Maestra Diaria Clientes
@@ -123,7 +123,6 @@ CREATE TABLE MD_clientes(
 	id_ti_persona CHAR(1) FOREIGN KEY REFERENCES Tipo_persona(id_ti_persona),
 	ti_sexo CHAR(1) FOREIGN KEY REFERENCES Tipo_sexo(ti_sexo),
 	fe_nacimiento DATE,
-	cant_prestamos INT NOT NULL,
 	id_profesion INT FOREIGN KEY REFERENCES Profesion(id_profesion),
 	id_esta_civil INT FOREIGN KEY REFERENCES Estado_civil(id_esta_civil),
 	id_estado CHAR(1) FOREIGN KEY REFERENCES Estado(id_estado) NOT NULL,
@@ -157,7 +156,6 @@ CREATE TABLE MD_inversionistas(
 	id_ti_persona CHAR(1) FOREIGN KEY REFERENCES Tipo_persona(id_ti_persona) NOT NULL,
 	ti_sexo CHAR(1) FOREIGN KEY REFERENCES Tipo_sexo(ti_sexo),
 	fe_nacimiento DATE,
-	cant_inversiones INT NOT NULL,
 	id_profesion INT FOREIGN KEY REFERENCES Profesion(id_profesion),
 	id_esta_civil INT FOREIGN KEY REFERENCES Estado_civil(id_esta_civil),
 	id_estado CHAR(1) FOREIGN KEY REFERENCES Estado(id_estado) NOT NULL,
@@ -222,9 +220,6 @@ CREATE TABLE Cronogramas_Cuotas (
 );
 GO
 
--- Índice en id del cliente
-CREATE INDEX idx_id_cliente_cuotas ON Cronogramas_Cuotas(id_cliente);
-
 -- Índice en fecha de pago
 CREATE INDEX idx_fecha_pago_cuotas ON Cronogramas_Cuotas(fecha_pago);
 
@@ -236,9 +231,6 @@ CREATE TABLE Cronogramas_Desembolsos (
     desembolso_mensual DECIMAL(18, 2) NOT NULL,
 );
 GO
-
--- Índice en id del inversionista
-CREATE INDEX idx_id_inversionista_desembolsos ON Cronogramas_Desembolsos(id_inversionista);
 
 -- Índice en fecha de pago
 CREATE INDEX idx_fecha_pago_desembolsos ON Cronogramas_Desembolsos(fecha_pago);
@@ -674,7 +666,6 @@ INSERT INTO Estado_producto(id_estado_producto,de_estado_producto)
 VALUES
 	(1, 'APROBADO'),
 	(2, 'RECHAZADO'),
-	(2, 'PENDIENTE DE APROBACIÓN'),
-)
+	(3, 'PENDIENTE DE APROBACIÓN');
 
-SET IDENTITY_INSERT Estado_producto OF;
+SET IDENTITY_INSERT Estado_producto OFF;

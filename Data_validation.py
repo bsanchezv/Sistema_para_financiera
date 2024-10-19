@@ -28,11 +28,11 @@ inversionistas_df = pd.read_csv(os.path.join(ruta_bases, 'Inversionistas.csv'), 
 
 ### Columnas esperadas para Clientes.csv
 
-clientes_columnas = ['ti_documento', 'nu_documento', 'nombre_cliente', 'email_cliente', 'telefono_cliente', 'direccion_cliente', 'id_pais_docu', 'id_ti_persona', 'ti_sexo', 'fe_nacimiento', 'nu_cant_pres', 'id_profesion', 'id_esta_civil', 'id_estado', 'id_cat_cliente', 'fe_apertura', 'fe_aper_prim_cre']
+clientes_columnas = ['ti_documento', 'nu_documento', 'nombre_cliente', 'email_cliente', 'telefono_cliente', 'direccion_cliente', 'id_pais_docu', 'id_ti_persona', 'ti_sexo', 'fe_nacimiento', 'id_profesion', 'id_esta_civil', 'id_estado', 'id_cat_cliente', 'fe_apertura', 'fe_aper_prim_cre']
 
 ### Columnas esperadas para Inversionistas.csv
 
-inversionistas_columnas = ['ti_documento', 'nu_documento', 'nombre_inversionista', 'email_inversionista', 'telefono_inversionista', 'direccion_inversionista', 'id_pais_docu', 'id_ti_persona', 'ti_sexo', 'fe_nacimiento', 'nu_cant_pres', 'id_profesion', 'id_esta_civil', 'id_estado', 'id_niv_inversionista' , 'fe_apertura', 'fe_aper_prim_inv']
+inversionistas_columnas = ['ti_documento', 'nu_documento', 'nombre_inversionista', 'email_inversionista', 'telefono_inversionista', 'direccion_inversionista', 'id_pais_docu', 'id_ti_persona', 'ti_sexo', 'fe_nacimiento', 'id_profesion', 'id_esta_civil', 'id_estado', 'id_niv_inversionista' , 'fe_apertura', 'fe_aper_prim_inv']
 
 #---------------------------------------------------------------------------------------------
 
