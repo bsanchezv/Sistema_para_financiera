@@ -25,3 +25,27 @@ CREATE TABLE #temp_clientes(
 GO
 
 SELECT * FROM #temp_clientes;
+
+
+CREATE TABLE #temp_inversionistas(
+	--id_inversionista INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
+	ti_documento CHAR(2),
+	nu_documento VARCHAR(15),
+	nombre_inversionista VARCHAR(100),
+	email_inversionista VARCHAR(100),
+	telefono_inversionista VARCHAR(15),
+	direccion_inversionista VARCHAR(200),
+	--id_ubigeo_domicilio CHAR(6) FOREIGN KEY REFERENCES Ubigeo_domicilio(id_ubigeo_domicilio) NOT NULL,
+	id_pais_docu CHAR(4),
+	id_ti_persona CHAR(1),
+	ti_sexo CHAR(1),
+	fe_nacimiento DATE,
+	id_profesion INT,
+	id_esta_civil,
+	id_estado CHAR(1),
+	id_niv_inversionista INT,
+	fe_apertura  DATE NOT NULL DEFAULT GETDATE(),
+	fe_aper_prim_inver DATE NOT NULL DEFAULT GETDATE(),
+	fe_actu_reg DATE NOT NULL DEFAULT GETDATE()
+);
+GO

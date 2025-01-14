@@ -1,6 +1,8 @@
 import pyodbc
 import os
 import pandas as pd
+import emoji
+
 
 #-------------------------------------------------------------------------------------------
 
@@ -16,13 +18,18 @@ ruta_bases = os.path.join(ruta_proyecto, 'Bases')
 
 # Función para conectar a SQL Server
 def conectar_bd():
-    conn = pyodbc.connect(
-        'DRIVER={SQL Server};'
-        'SERVER=DESKTOP-UAGKOK6;'
-        'DATABASE=Prestamo_universal;'
-        'Trusted_Connection=yes;'
-    )
-    return conn
+    try:
+        conn = pyodbc.connect(
+            'DRIVER={SQL Server};'
+            'SERVER=DESKTOP-UAGKOK6;'
+            'DATABASE=Prestamo_universal;'
+            'Trusted_Connection=yes;'
+        )
+        print(emoji.emojize(f"Conexión a la base de datos exitosa. :thumbs_up:"))
+        return conn
+    except pyodbc.Error as e:
+        print("Error al conectar a la base de datos:", e)
+        return None
 
 # Función para crear la tabla temporal
 def crear_tabla_temporal_clientes(cursor):
@@ -42,8 +49,8 @@ def crear_tabla_temporal_clientes(cursor):
             id_esta_civil INT,
             id_estado CHAR(1),
             id_cat_cliente INT,
-            fe_apertura DATE,
-            fe_aper_prim_prest DATE
+            fe_apertura DATE NOT NULL DEFAULT GETDATE(),
+            fe_aper_prim_prest DATE NOT NULL DEFAULT GETDATE()
         )
     """
     cursor.execute(sql_create_temp)
@@ -65,15 +72,15 @@ def crear_tabla_temporal_inversionistas(cursor):
             id_profesion INT,
             id_esta_civil INT,
             id_estado CHAR(1),
-            id_nivel_inversionista INT,
-            fe_apertura DATE,
-            fe_aper_prim_inver DATE
-
+            id_niv_inversionista INT,
+            fe_apertura DATE NOT NULL DEFAULT GETDATE(),
+            fe_aper_prim_inver DATE NOT NULL DEFAULT GETDATE()
         )
     """
     cursor.execute(sql_create_temp)
 
-# Función para insertar los datos en la tabla temporal
+
+# Función para insertar los datos en la tabla temporal de clientes
 
 def insertar_datos_clientes(cursor, data):
     sql_insert_temp = """
@@ -88,8 +95,8 @@ def insertar_datos_clientes(cursor, data):
 def insertar_datos_inversionistas(cursor, data):
     sql_insert_temp = """
         INSERT INTO #temp_inversionistas 
-        (ti_documento;nu_documento;nombre_inversionista;email_inversionista;telefono_inversionista;direccion_inversionista;id_pais_docu;id_ti_persona;ti_sexo;fe_nacimiento;id_profesion;id_esta_civil;id_estado;id_niv_inversionista;fe_apertura;fe_aper_prim_inv)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (ti_documento, nu_documento, nombre_inversionista, email_inversionista, telefono_inversionista, direccion_inversionista, id_pais_docu, id_ti_persona, ti_sexo, fe_nacimiento, id_profesion, id_esta_civil, id_estado, id_niv_inversionista, fe_apertura, fe_aper_prim_inver)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
     cursor.executemany(sql_insert_temp, data)
 
@@ -97,18 +104,13 @@ def insertar_datos_inversionistas(cursor, data):
 
 def verificar_tabla_temporal(cursor):
 
-    # Mostrar #temp_clientes
+    # Verificar #temp_clientes
 
     print("\nDatos en #temp_clientes:")
-
-    # Consulta para verificar la tabla temporal #temp_clientes
-
     cursor.execute("SELECT * FROM #temp_clientes")
     rows_clientes = cursor.fetchall()
     
     if rows_clientes:
-
-        print("Datos en #temp_clientes:")
 
         for row in rows_clientes:
 
@@ -117,44 +119,66 @@ def verificar_tabla_temporal(cursor):
 
         print("La tabla #temp_clientes está vacía.")
 
-    # Mostrar #temp_inversionistas
+    # Verificar #temp_inversionistas
 
     print("\nDatos en #temp_inversionistas:")
-
-    # Consulta para verificar la tabla temporal #temp_clientes
-
     cursor.execute("SELECT * FROM #temp_inversionistas")
     rows_inversionistas = cursor.fetchall()
+
     if rows_inversionistas:
+
         for row in rows_inversionistas:
+
             print(row)
+
     else:
+
         print("La tabla #temp_inversionistas está vacía.")
+
 # LLAMADA DE FUNCIONES
-#######################################################
-##### FALTA CORREGIR ESTA PARTE #####
-#######################################################
+# Función principal
 if __name__ == "__main__":
-        
-    # Paso 2: Conectar a la base de datos
-    conexion = conectar_bd()
-    
-    # Crear un cursor
-    cursor = conexion.cursor()
-    
-    # Crear la tabla temporal
+    try:
+        # Conectar a la base de datos
+        conexion = conectar_bd()
+        # Crear cursor
+        cursor = conexion.cursor()
 
-    crear_tabla_temporal_clientes(cursor)
-    crear_tabla_temporal_inversionistas(cursor)
+        # Crear tablas temporales
+        print("Creando tabla temporal de clientes...")
+        crear_tabla_temporal_clientes(cursor)
 
-    
-    # Paso 3: Insertar los datos en la tabla temporal
-    insertar_datos(cursor, data_clientes)
+        print("Creando tabla temporal de inversionistas...")
+        crear_tabla_temporal_inversionistas(cursor)
 
-    # Verificar la tabla temporal
-    verificar_tabla_temporal(cursor)
+        # Cargar datos desde archivos CSV
+        archivo_clientes = os.path.join(ruta_bases, 'Clientes.csv')
+        archivo_inversionistas = os.path.join(ruta_bases, 'Inversionistas.csv')
 
-    # Confirmar cambios y cerrar la conexión
-    conexion.commit()
-    cursor.close()
-    conexion.close()
+        print("Cargando datos de clientes desde CSV...")
+        data_clientes = pd.read_csv(archivo_clientes, delimiter=';', encoding='utf-8').values.tolist()
+        insertar_datos_clientes(cursor, data_clientes)
+
+        print("Cargando datos de inversionistas desde CSV...")
+        data_inversionistas = pd.read_csv(archivo_inversionistas, delimiter=';', encoding='utf-8').values.tolist()
+        insertar_datos_inversionistas(cursor, data_inversionistas)
+
+        # Verificar las tablas temporales
+        print("Verificando datos en tablas temporales...")
+        verificar_tabla_temporal(cursor)
+
+        # Confirmar cambios
+        conexion.commit()
+        print("Datos insertados y confirmados correctamente.")
+
+    except Exception as e:
+        print("Error:", e)
+    finally:
+        # Cerrar la conexión
+        if cursor:
+            cursor.close()
+        if conexion:
+            conexion.close()
+        print("Conexión cerrada.")
+#---------
+        print("Estructura de los datos de clientes:", data_clientes[:1])  # Muestra las primeras 5 filas para verificar

@@ -15,9 +15,9 @@ ruta_bases = os.path.join(ruta_proyecto, 'Bases')
 
 #LECTURA DE ARCHIVOS .CSV
 
-clientes_df = pd.read_csv(os.path.join(ruta_bases, 'Clientes.csv'), delimiter = ';')
+clientes_df = pd.read_csv(os.path.join(ruta_bases, 'Clientes.csv'), delimiter = ';', encoding='utf-8')
 
-inversionistas_df = pd.read_csv(os.path.join(ruta_bases, 'Inversionistas.csv'), delimiter = ';')
+inversionistas_df = pd.read_csv(os.path.join(ruta_bases, 'Inversionistas.csv'), delimiter = ';', encoding='utf-8')
 
 #---------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------
@@ -28,11 +28,11 @@ inversionistas_df = pd.read_csv(os.path.join(ruta_bases, 'Inversionistas.csv'), 
 
 ### Columnas esperadas para Clientes.csv
 
-clientes_columnas = ['ti_documento', 'nu_documento', 'nombre_cliente', 'email_cliente', 'telefono_cliente', 'direccion_cliente', 'id_pais_docu', 'id_ti_persona', 'ti_sexo', 'fe_nacimiento', 'id_profesion', 'id_esta_civil', 'id_estado', 'id_cat_cliente', 'fe_apertura', 'fe_aper_prim_cre']
+clientes_columnas = ['ti_documento', 'nu_documento', 'nombre_cliente', 'email_cliente', 'telefono_cliente', 'direccion_cliente', 'id_pais_docu', 'id_ti_persona', 'ti_sexo', 'fe_nacimiento', 'id_profesion', 'id_esta_civil', 'id_estado', 'id_cat_cliente', 'fe_apertura', 'fe_aper_prim_prest']
 
 ### Columnas esperadas para Inversionistas.csv
 
-inversionistas_columnas = ['ti_documento', 'nu_documento', 'nombre_inversionista', 'email_inversionista', 'telefono_inversionista', 'direccion_inversionista', 'id_pais_docu', 'id_ti_persona', 'ti_sexo', 'fe_nacimiento', 'id_profesion', 'id_esta_civil', 'id_estado', 'id_niv_inversionista' , 'fe_apertura', 'fe_aper_prim_inv']
+inversionistas_columnas = ['ti_documento', 'nu_documento', 'nombre_inversionista', 'email_inversionista', 'telefono_inversionista', 'direccion_inversionista', 'id_pais_docu', 'id_ti_persona', 'ti_sexo', 'fe_nacimiento', 'id_profesion', 'id_esta_civil', 'id_estado', 'id_niv_inversionista' , 'fe_apertura', 'fe_aper_prim_inver']
 
 #---------------------------------------------------------------------------------------------
 
@@ -151,10 +151,10 @@ validar_fechas(inversionistas_df, 'fe_nacimiento', "Inversionistas.csv", permiti
 ### Validar fechas en otras columnas donde NO se permite NaT
 
 validar_fechas(clientes_df, 'fe_apertura', "Clientes.csv", permitir_nat=False)
-validar_fechas(clientes_df, 'fe_aper_prim_cre', "Clientes.csv", permitir_nat=False)
+validar_fechas(clientes_df, 'fe_aper_prim_prest', "Clientes.csv", permitir_nat=False)
 
 validar_fechas(inversionistas_df, 'fe_apertura', "Inversionistas.csv", permitir_nat=False)
-validar_fechas(inversionistas_df, 'fe_aper_prim_inv', "Inversionistas.csv", permitir_nat=False)
+validar_fechas(inversionistas_df, 'fe_aper_prim_inver', "Inversionistas.csv", permitir_nat=False)
 
 #---------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------

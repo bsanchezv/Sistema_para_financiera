@@ -1,32 +1,46 @@
-/*CREACIÓN DE DB*/
+/* CREACIÓN DE DB */
 USE master;
+GO
 
+-- Verificar si la base de datos existe y eliminarla si es así
 IF EXISTS
 (
-	SELECT name
-	FROM sysdatabases
-	WHERE name = 'Prestamo_universal'
+    SELECT name
+    FROM sys.databases
+    WHERE name = 'Prestamo_universal'
 )
+BEGIN
+    -- Eliminar la base de datos existente
+    DROP DATABASE Prestamo_universal;
+END
+GO
 
-DROP DATABASE Prestamo_universal;
-
-CREATE DATABASE Prestamo_universal ON
-(
-	NAME = N'Prestamo_universal_dat',
-	FILENAME = N'C:\db\Prestamo_universal_dat.mdf',
-	SIZE = 10MB,
-	MAXSIZE = 50MB,
-	FILEGROWTH = 5MB
-)
-
-LOG ON
-(
-	NAME = N'Prestamo_universal_log',
-	FILENAME = N'C:\db\Prestamo_universal_log.ldf',
-	SIZE = 5MB,
-	MAXSIZE = UNLIMITED,
-	FILEGROWTH = 10%
-)
+-- Crear la base de datos con los archivos de datos y log
+BEGIN TRY
+    CREATE DATABASE Prestamo_universal ON
+    (
+        NAME = N'Prestamo_universal_dat',
+        FILENAME = N'C:\db\Prestamo_universal_dat.mdf',
+        SIZE = 10MB,
+        MAXSIZE = 50MB,
+        FILEGROWTH = 5MB
+    )
+    LOG ON
+    (
+        NAME = N'Prestamo_universal_log',
+        FILENAME = N'C:\db\Prestamo_universal_log.ldf',
+        SIZE = 5MB,
+        MAXSIZE = UNLIMITED,
+        FILEGROWTH = 10%
+    );
+    -- Confirmación de creación
+    PRINT 'Base de datos Prestamo_universal creada exitosamente.';
+END TRY
+BEGIN CATCH
+    -- Manejo de errores
+    PRINT 'Error al crear la base de datos: ' + ERROR_MESSAGE();
+END CATCH;
+GO
 
 /*CREACIÓN DE TABLAS*/
 USE Prestamo_universal;
