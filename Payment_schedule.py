@@ -72,13 +72,13 @@ def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fec
 
             'Fecha de Pago': fecha_pago.strftime('%d-%m-%Y'),
 
-            'Cuota': round(cuota_mensual, 2),
+            'Cuota (S/)': round(cuota_mensual, 2),
 
-            'Interés': round(interes_mensual, 2),
+            'Interés (S/)': round(interes_mensual, 2),
 
-            'Capital': round(capital_amortizado, 2),
+            'Capital (S/)': round(capital_amortizado, 2),
 
-            'Saldo Pendiente': round(saldo_pendiente if saldo_pendiente > 0 else 0, 2)  # Evitar saldo negativo al final
+            'Saldo Pendiente (S/)': round(saldo_pendiente if saldo_pendiente > 0 else 0, 2)  # Evitar saldo negativo al final
         })
     
     cronograma_df = pd.DataFrame(cuotas)
@@ -118,14 +118,14 @@ def cronograma_a_imagen(cronograma_df, monto_prestamo, tasa_interes, num_cuotas,
     ### Estructura de la cabecera:
 
     resumen = f"""
-    Monto del préstamo: {monto_prestamo} 
-    Interés mensual: {round(tasa_interes * 100, 2)}% 
+    Monto del préstamo (S/): {monto_prestamo} 
+    Interés mensual (S/): {round(tasa_interes * 100, 2)}% 
     Fecha de préstamo: {fecha_inicio_prestamo} 
     Frecuencia de pago: Mensual
     Cantidad de cuotas: {num_cuotas} 
-    Cuota: {cuota_mensual} 
-    Total intereses: {total_intereses} 
-    Total a pagar: {total_a_pagar}
+    Cuota (S/): {cuota_mensual} 
+    Total intereses (S/): {total_intereses} 
+    Total a pagar (S/): {total_a_pagar}
     \n
     CRONOGRAMA DE PAGOS:
     """
