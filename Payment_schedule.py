@@ -17,14 +17,15 @@ import emoji
 ## Función para calcular el cronograma de cuotas del prestatario
 
 def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo):
-   
-    ### Validaciones de los argumentos
+    """
+    Genera el cronograma de pagos para un prestatario.
+    """
 
-    if not (isinstance(monto_prestamo, (int, float)) and monto_prestamo > 0):
-        raise ValueError("El monto debe ser un número positivo.")
+    if not (isinstance(monto_prestamo, (int, float)) and monto_prestamo >= 0):
+        raise ValueError("El monto debe ser mayor a 0.")
     
-    if not (0 <= tasa_interes <= 1):
-        raise ValueError("La tasa de interés debe ser un número entre 0 y 1.")
+    if not (0 < tasa_interes <= 1):
+        raise ValueError("La tasa de interés debe er un número mayor a 0 y menor a 1.")
     
     if not (isinstance(num_cuotas, int) and num_cuotas > 0):
         raise ValueError("El número de cuotas debe ser un entero positivo.")
@@ -36,7 +37,7 @@ def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fec
     
     ### Calcular cuota mensual usando la fórmula de amortización
 
-    cuotas = []
+    cronograma_prestatario = []
 
     cuota_mensual = (monto_prestamo * tasa_interes) / (1 - (1 + tasa_interes) ** -num_cuotas)
 
@@ -47,45 +48,42 @@ def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fec
     for i in range(1, num_cuotas + 1): # num_cuotas iteraciones empezando en 1 y terminando en num_cuotas
 
         #### Cálculo del interés por cada periodo:
-
         interes_mensual = saldo_pendiente * tasa_interes
 
         #### Cálculo del capital amortiado
-
         capital_amortizado = cuota_mensual - interes_mensual
 
         #### Cálculo del saldo pendiente:
-
         saldo_pendiente -= capital_amortizado
 
         #### Cálculo del total de intereses:
-        
         total_intereses += interes_mensual
 
         #### Fecha de pago de cada cuota
-
         fecha_pago = fecha_inicio + relativedelta(months = i)  # Sumar i meses a la fecha_inicio_prestamo
 
         #### Estructura del cronograma:
+        cronograma_prestatario.append({
 
-        cuotas.append({
-
-            'Fecha de Pago': fecha_pago.strftime('%d-%m-%Y'),
-
+            'Fecha de Pago': fecha_pago.strftime('%d/%m/%Y'),
             'Cuota (S/)': round(cuota_mensual, 2),
-
             'Interés (S/)': round(interes_mensual, 2),
-
             'Capital (S/)': round(capital_amortizado, 2),
-
             'Saldo Pendiente (S/)': round(saldo_pendiente if saldo_pendiente > 0 else 0, 2)  # Evitar saldo negativo al final
         })
-    
-    cronograma_df = pd.DataFrame(cuotas)
 
-    total_a_pagar = round(cuota_mensual * num_cuotas, 2)
+    # Resumen
+    resumen_cronograma_prestatario = {
+        "Monto del préstamo (S/)": monto_prestamo,
+        "Tasa de interés (%)": round(tasa_interes * 100, 2),
+        "Fecha de préstamo": fecha_inicio.strftime('%d/%m/%Y'),
+        "Frecuencia de pago": 'Mensual',
+        "Cantidad de cuotas": num_cuotas,
+        "Total Intereses (S/)": round(total_intereses ,2),
+        "Total a Pagar (S/)": round(cuota_mensual * num_cuotas, 2)
+    }
 
-    return cronograma_df, round(cuota_mensual, 2), round(total_intereses, 2), total_a_pagar
+    return pd.DataFrame(cronograma_prestatario), pd.DataFrame([resumen_cronograma_prestatario])
 
 #---------------------------------------------------------------------------------------------
 
@@ -93,80 +91,66 @@ def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fec
 
 ## Función para convertir el cronograma a una imagen:
 
-def cronograma_a_imagen(cronograma_df, monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen):
+def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df, total_intereses, num_cuotas):
 
-    ### Crear una figura y ejes con matplotlib
-
-    fig, ax = plt.subplots(figsize=(10, 9))
-
-    ### Ocultar los ejes
-
-    ax.xaxis.set_visible(True)
-    ax.yaxis.set_visible(True)
-    ax.set_frame_on(True)
-
-    ### Crear una tabla a partir del DataFrame y mostrarla
-
-    tabla = ax.table(cellText=cronograma_df.values, colLabels=cronograma_df.columns, cellLoc='center', loc='center', bbox=[0, 0.2, 1, 0.5])
-
-    ### Ajustar el tamaño de las celdas
-
-    tabla.auto_set_font_size(False)
-    tabla.set_fontsize(10)
-    tabla.scale(1.2, 1.2)
-
-    ### Estructura de la cabecera:
-
-    resumen = f"""
-    Monto del préstamo (S/): {monto_prestamo} 
-    Interés mensual (S/): {round(tasa_interes * 100, 2)}% 
-    Fecha de préstamo: {fecha_inicio_prestamo} 
-    Frecuencia de pago: Mensual
-    Cantidad de cuotas: {num_cuotas} 
-    Cuota (S/): {cuota_mensual} 
-    Total intereses (S/): {total_intereses} 
-    Total a pagar (S/): {total_a_pagar}
-    \n
-    CRONOGRAMA DE PAGOS:
     """
-
-    ### Agregar la cabecera del resumen en la parte superior
-
-    ax.text(0.5, 1, resumen, ha='center', va='top', fontsize=10, transform=ax.transAxes)
-
-    ### Estructura de los términos y condiciones
-    terminos_condiciones = f"""
-    - No incluye el ITF en caso de requerir.
-    - La tasa de interés es fija.
-    - Cargo por pago atrasado: {round(total_intereses * 0.01 / num_cuotas, 2)} por día.
-    - Máximo 7 días de espera después de vencida la cuota.
+    Convierte el cronograma a una imagen y la muestra con el resumen.
     """
+    # Crear figura y ejes
+    fig, ax = plt.subplots(figsize=(12, 10))
+    ax.axis('on')  # Ocultar los ejes en off
 
+    # Mostrar el resumen primero
+    ax.text(0.5, 0.97, "Resumen del Cronograma", fontsize=14, ha="center", va="center", weight="bold")
+    tabla_resumen = ax.table(
+        cellText=resumen_cronograma_prestatario_df.values,
+        colLabels=resumen_cronograma_prestatario_df.columns,
+        cellLoc='center',
+        loc='center',
+        bbox=[0.1, 0.75, 0.8, 0.2]  # [left, bottom, width, height]
+    )
+    tabla_resumen.auto_set_font_size(False)
+    tabla_resumen.set_fontsize(10)
+    tabla_resumen.scale(1.2, 1.2)
+
+    # Mostrar el cronograma después
+    ax.text(0.5, 0.72, "Cronograma de Pagos", fontsize=14, ha="center", va="center", weight="bold")
+    tabla_cronograma = ax.table(
+        cellText=cronograma_prestatario_df.values,
+        colLabels=cronograma_prestatario_df.columns,
+        cellLoc='center',
+        loc='center',
+        bbox=[0.1, 0.2, 0.8, 0.5]  # [left, bottom, width, height]
+    )
+    tabla_cronograma.auto_set_font_size(False)
+    tabla_cronograma.set_fontsize(8)
+    tabla_cronograma.scale(1.0, 1.0)
+    
+    # Agregar términos y condiciones en el pie de página
+    terminos_condiciones = (
+        f"- No incluye el ITF en caso de requerir.\n"
+        f"- La tasa de interés es fija.\n"
+        f"- Cargo por pago atrasado (S/): {round(total_intereses * 0.01 / num_cuotas, 2)} por día.\n"
+        f"- Máximo 7 días de espera después de vencida la cuota."
+    )
     ### Agregar los términos y condiciones al footer:
-
-    ax.text(0.5, 0.15, terminos_condiciones, ha='center', va='top', fontsize=10, transform=ax.transAxes)
+    ax.text(0.5, 0.05, terminos_condiciones, ha='center', va='center', fontsize=10, wrap=True)
 
     # Mostrar la imagen directamente
+    plt.tight_layout()
+    plt.show()
 
-    if mostrar_imagen:
+    # Guardar la imagen en un objeto BytesIO (para enviar por correo)
 
-        # Mostrar la imagen directamente
+    image_buffer = BytesIO()
+    plt.savefig(image_buffer, format='png', bbox_inches='tight')
+    plt.close(fig)
 
-        plt.show()
+    # Mover el puntero al inicio
 
-    else:
+    image_buffer.seek(0)
 
-        # Guardar la imagen en un objeto BytesIO (para enviar por correo)
-
-        image_buffer = BytesIO()
-        plt.savefig(image_buffer, format='png', bbox_inches='tight')
-        plt.close(fig)
-
-        # Mover el puntero al inicio
-
-        image_buffer.seek(0)
-
-        return image_buffer
+    return image_buffer
 
 #---------------------------------------------------------------------------------------------
 
@@ -184,11 +168,11 @@ print("API Key:", sendgrid_api_key)  # Para asegurarte de que se cargó correcta
 
 ## Función para enviar el correo con la imagen adjunta
 
-def enviar_correo_con_imagen(correo_destinatario,correo_destino, asunto, cuerpo, cronograma_df, monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen):
+def enviar_correo_con_imagen(correo_destinatario,correo_destino, asunto, cuerpo, cronograma_cuotas_df, monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen):
 
     ### Generar la imagen del cronograma
 
-    imagen_buffer = cronograma_a_imagen(cronograma_df, monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen)
+    imagen_buffer = cronograma_a_imagen(cronograma_cuotas_df, monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen)
 
     ### Convertir la imagen a base64
 
@@ -234,31 +218,24 @@ def enviar_correo_con_imagen(correo_destinatario,correo_destino, asunto, cuerpo,
 
 # Generar el cronograma de pagos
 
-monto_prestamo = 10000
-tasa_interes = 0.05
-num_cuotas = 12
-fecha_inicio_prestamo = '2024-10-31'
+# Ejemplo de uso
+monto_prestamo = 10000  # Monto del préstamo
+tasa_interes = 0.05  # Tasa de interés (5%)
+num_cuotas = 12  # Número de cuotas
+fecha_inicio_prestamo = "2024-01-01"  # Fecha de inicio del préstamo
 
-cronograma_df, cuota_mensual, total_intereses, total_a_pagar = generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo)
+# Generar cronograma y resumen
+cronograma_prestatario_df, resumen_cronograma_prestatario_df = generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo)
 
 # Imprimir el cronograma de pagos
 
-print(cronograma_df)
+print(cronograma_prestatario_df)
+print(resumen_cronograma_prestatario_df)
+
 
 # Mostrar la imagen antes de enviar el correo
 
-cronograma_a_imagen(
-
-    cronograma_df=cronograma_df,
-    monto_prestamo=monto_prestamo,
-    tasa_interes=tasa_interes,
-    num_cuotas=num_cuotas,
-    fecha_inicio_prestamo=fecha_inicio_prestamo,
-    cuota_mensual=cuota_mensual,
-    total_intereses=total_intereses,
-    total_a_pagar=total_a_pagar,
-    mostrar_imagen = False #Cambiar si se quiere mostrar o no
-)
+cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df, resumen_cronograma_prestatario_df["Total Intereses (S/)"][0], num_cuotas)
 
 # Enviar el correo con el cronograma como imagen adjunta
 
@@ -268,7 +245,7 @@ enviar_correo_con_imagen(
     correo_destino = 'barbaragabriela2820@gmail.com',
     asunto = 'Cronograma de Pagos del Préstamo',
     cuerpo = '<p>Adjunto encontrarás el cronograma de pagos del préstamo solicitado.</p>',
-    cronograma_df = cronograma_df,
+    cronograma_df = cronograma_prestatario_df,
     monto_prestamo=monto_prestamo,
     tasa_interes=tasa_interes,
     num_cuotas=num_cuotas,
