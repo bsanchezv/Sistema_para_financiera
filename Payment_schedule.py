@@ -219,10 +219,10 @@ def enviar_correo_con_imagen(correo_destinatario,correo_destino, asunto, cuerpo,
 # Generar el cronograma de pagos
 
 # Ejemplo de uso
-monto_prestamo = 10000  # Monto del préstamo
-tasa_interes = 0.05  # Tasa de interés (5%)
-num_cuotas = 12  # Número de cuotas
-fecha_inicio_prestamo = "2024-01-01"  # Fecha de inicio del préstamo
+monto_prestamo = 1500  # Monto del préstamo
+tasa_interes = 0.13  # Tasa de interés (5%)
+num_cuotas = 4  # Número de cuotas
+fecha_inicio_prestamo = "2025-01-02"  # Fecha de inicio del préstamo
 
 # Generar cronograma y resumen
 cronograma_prestatario_df, resumen_cronograma_prestatario_df = generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo)

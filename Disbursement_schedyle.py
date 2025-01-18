@@ -148,11 +148,11 @@ def cronograma_a_imagen(cronograma_inversionista_df, resumen_cronograma_inversio
 
 # Ejemplo de uso
 monto_inversion = 2000  # Monto invertido
-trea = 0.1  # TREA en decimal
+trea = 0.1088  # TREA en decimal
 num_desembolsos = 4  # Número de desembolsos
-tipo_desembolso = "mensual"  # Tipo de desembolso ("único" o "mensual")
+tipo_desembolso = "único"  # Tipo de desembolso ("único" o "mensual")
 fecha_inicio_inversion = "01/01/2024"  # Fecha de inicio
-
+#0.1088
 # Calcular cronograma
 cronograma_inversionista_df, resumen_cronograma_inversionista_df = generar_cronograma_inversionista(monto_inversion, trea, num_desembolsos, tipo_desembolso, fecha_inicio_inversion)
 
