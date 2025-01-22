@@ -666,11 +666,11 @@ SET IDENTITY_INSERT Nivel_inversionista ON;
 
 INSERT INTO Nivel_inversionista(id_niv_inversionista,de_niv_inversionista)
 VALUES
-	(1,'BRONCE'),
-	(2,'PLATA'),
+	(5,'BRONCE'),
+	(4,'PLATA'),
 	(3,'ORO'),
-	(4,'PLATINO'),
-	(5,'DIAMANTE');
+	(2,'PLATINO'),
+	(1,'DIAMANTE');
 
 SET IDENTITY_INSERT Nivel_inversionista OFF;
 

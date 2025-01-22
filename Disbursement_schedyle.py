@@ -13,6 +13,7 @@ def calcular_trem(trea):
     return (1 + trea) ** (1 / 12) - 1
 
 def generar_cronograma_inversionista(monto_inversion, trea, num_desembolsos, tipo_desembolso, fecha_inicio_inversion):
+    
 
     """
     Calcula el cronograma de desembolsos para un inversionista.
@@ -20,17 +21,17 @@ def generar_cronograma_inversionista(monto_inversion, trea, num_desembolsos, tip
 
     # Validaciones de entrada
     if not (isinstance(monto_inversion, (int, float)) and monto_inversion >= 0):
-        raise ValueError("El monto debe ser mayor a 0.")
+        raise ValueError("El monto de inversión debe ser mayor a 0.")
     if not(0 < trea <= 1):
         raise ValueError("La TREA debe ser un número mayor a 0 y menor a 1.")
     if num_desembolsos <= 0 or not isinstance(num_desembolsos, int):
-        raise ValueError("El número de desembolsos debe ser un entero positivo.")
+        raise ValueError("El número de meses debe ser un entero positivo.")
     if tipo_desembolso not in ["único", "mensual"]:
         raise ValueError("El tipo de desembolso debe ser 'único' o 'mensual'.")
     
     # Calcular la TREM
     trem = calcular_trem(trea)
-
+    
     # Convertir fecha de inicio a objeto datetime
     fecha_inicio = datetime.strptime(fecha_inicio_inversion, '%d/%m/%Y')
 
@@ -58,9 +59,9 @@ def generar_cronograma_inversionista(monto_inversion, trea, num_desembolsos, tip
             cronograma_inversionista.append({
                 "N° mes": i,
                 "Fecha": fecha_desembolso.strftime('%d/%m/%Y'),
-                "Capital (S/)": round(capital, 2),
-                "Interés mensual (S/)": round(interes_mensual, 2),
-                "Interés acumulado mensual (S/)": round(interes_acumulado, 2),
+                "Saldo (S/)": round(capital, 2),
+                "Rendimiento mensual (S/)": round(interes_mensual, 2),
+                "Rendimiento acumulado mensual (S/)": round(interes_acumulado, 2),
                 "Dinero acumulado mensual (S/)": round(dinero_acumulado, 2)
             })
 
@@ -69,13 +70,13 @@ def generar_cronograma_inversionista(monto_inversion, trea, num_desembolsos, tip
 
         # Resumen
         resumen_cronograma_inversionista = {
-            "N° de desembolsos": '1',
-            "Fecha final de pago": cronograma_inversionista[-1]["Fecha"],
-            "Interés total (S/)": round(interes_acumulado, 2),
-            "Monto final acumulado (S/)": round(dinero_acumulado, 2)
+            "N° de desembolsos:": '1',
+            "Fecha de desembolso:": cronograma_inversionista[-1]["Fecha"],
+            "Importe invertido (S/):": monto_inversion,
+            "Rendimiento total (S/):": round(interes_acumulado, 2),
+            "Importe desembolsado (S/):": round(dinero_acumulado, 2)
         }
 
-    
     # Caso de desembolsos mensuales
     elif tipo_desembolso == "mensual":
         for i in range(1, num_desembolsos + 1):
@@ -101,70 +102,117 @@ def generar_cronograma_inversionista(monto_inversion, trea, num_desembolsos, tip
             # Agregar al cronograma
             cronograma_inversionista.append({
                 "N° Desembolso": i,
-                "Fecha de pago": fecha_desembolso.strftime('%d/%m/%Y'),
-                "Capital (S/)": round(dinero_acumulado - interes_mensual, 2),
-                "Interés mensual (S/)": round(interes_mensual, 2),
-                "Interés acumulado mensual (S/)": round(interes_acumulado, 2),
-                "Dinero acumulado mensual (S/)": round(dinero_acumulado, 2),
+                "Fecha": fecha_desembolso.strftime('%d/%m/%Y'),
+                "Saldo (S/)": round(dinero_acumulado - interes_mensual, 2),
+                "Rendimiento mensual (S/)": round(interes_mensual, 2),
+                "Rendimiento acumulado mensual (S/)": round(interes_acumulado, 2),
+                "Importe acumulado mensual (S/)": round(dinero_acumulado, 2),
                 "Desembolso (S/)": round(desembolso, 2)
             })
 
         # Resumen
         resumen_cronograma_inversionista = {
-            "N° de desembolsos": num_desembolsos,
-            "Fecha final de pago": cronograma_inversionista[-1]["Fecha de pago"],
-            "Interés total (S/)": round(interes_acumulado, 2),
-            "Monto final acumulado (S/)": round(sum([row["Desembolso (S/)"] for row in cronograma_inversionista]), 2)
+            "N° de desembolsos:": num_desembolsos,
+            "Fecha final de desembolso:": cronograma_inversionista[-1]["Fecha de pago"],
+            "Importe invertido (S/):": monto_inversion,
+            "Rendimiento total (S/):": round(interes_acumulado, 2),
+            "Importe total desembolsado (S/):": round(sum([row["Desembolso (S/)"] for row in cronograma_inversionista]), 2)
         }
 
+    cronograma_inversionista_df = pd.DataFrame(cronograma_inversionista)
 
-    return pd.DataFrame(cronograma_inversionista), pd.DataFrame([resumen_cronograma_inversionista])
+    resumen_cronograma_inversionista_df = pd.DataFrame([resumen_cronograma_inversionista]).T
+    resumen_cronograma_inversionista_df.columns = [""]
+    
+    return cronograma_inversionista_df, resumen_cronograma_inversionista_df 
 
 def cronograma_a_imagen(cronograma_inversionista_df, resumen_cronograma_inversionista_df):
     """
     Convierte el cronograma a una imagen y la muestra con el resumen.
     """
     # Crear figura
-    fig, ax = plt.subplots(figsize=(10, 8))
-    ax.axis('on')  # Ocultar los ejes
+    fig, ax = plt.subplots(figsize=(12, 10))
+    ax.axis('off')  # Ocultar los ejes
 
     # Mostrar el resumen primero
-    ax.text(0.5, 0.9, "Resumen del Cronograma", fontsize=14, ha="center", va="top", weight="bold")
-    tabla_resumen = ax.table(cellText=resumen_cronograma_inversionista_df.values, colLabels=resumen_cronograma_inversionista_df.columns, cellLoc='center', loc='center', bbox=[0, 0.7, 1, 0.15])
+    ax.text(0.5, 0.95, "Resumen del Cronograma", fontsize=16, ha="center", va="top", weight="bold")
+    tabla_resumen = ax.table(
+        cellText=resumen_cronograma_inversionista_df.values,
+        rowLabels=resumen_cronograma_inversionista_df.index,
+        cellLoc='center',
+        loc='center',
+        bbox=[0.45, 0.7, 0.25, 0.2]  # [left, bottom, width, height]
+    )
     tabla_resumen.auto_set_font_size(False)
-    tabla_resumen.set_fontsize(10)
+    tabla_resumen.set_fontsize(12)
     tabla_resumen.scale(1.2, 1.2)
 
-     # Mostrar el cronograma después
+    # Eliminar bordes de las celdas en la tabla de resumen
+    for key, cell in tabla_resumen.get_celld().items():
+        cell.set_linewidth(0)  # Establecer el ancho del borde en 0
+
+    # Mostrar el cronograma después
     ax.text(0.5, 0.65, "Cronograma", fontsize=14, ha="center", va="top", weight="bold")
-    tabla_cronograma = ax.table(cellText=cronograma_inversionista_df.values, colLabels=cronograma_inversionista_df.columns, cellLoc='center', loc='center', bbox=[0, 0.1, 1, 0.5])
+    tabla_cronograma = ax.table(
+        cellText=cronograma_inversionista_df.values,
+        colLabels=cronograma_inversionista_df.columns,
+        cellLoc='center',
+        loc='center',
+        bbox=[0, 0.0, 1, 0.6]  # [left, bottom, width, height]
+    )
     tabla_cronograma.auto_set_font_size(False)
-    tabla_cronograma.set_fontsize(8)
+    tabla_cronograma.set_fontsize(10)
     tabla_cronograma.scale(1.0, 1.0)
 
-
-    # Mostrar la imagen
+    # Ajustar diseño y mostrar
+    plt.tight_layout()
     plt.show()
 
-# Ejemplo de uso
-monto_inversion = 2000  # Monto invertido
-trea = 0.1088  # TREA en decimal
+def exportar_a_excel(cronograma_inversionista_df, resumen_cronograma_inversionista_df, nombre_archivo):
+    """
+    Exporta el cronograma y el resumen a un archivo de Excel con el nombre especificado.
+    """
+    # Agregar la columna "Estado de la cuota" al cronograma
+    cronograma_inversionista_df["Estado de la cuota"] = "Pendiente"
+
+    with pd.ExcelWriter(nombre_archivo, engine='xlsxwriter') as writer:
+        # Exportar el resumen al primer sheet
+        resumen_cronograma_inversionista_df.to_excel(writer, sheet_name="Resumen", startrow=0, startcol=0, header=False)
+
+        # Exportar el cronograma al segundo sheet
+        cronograma_inversionista_df.to_excel(writer, sheet_name="Cronograma", index=False)
+
+    print(f"Archivo Excel '{nombre_archivo}' generado exitosamente.")
+
+#---------------------------------------------------------------------------------------------
+
+# DATOS DE ENTRADA
+#---------------------------------------------------------------------------------------------
+
+monto_inversion = 1500  # Monto invertido
+trea = 0.0765 # TREA en decimal
 num_desembolsos = 4  # Número de desembolsos
 tipo_desembolso = "único"  # Tipo de desembolso ("único" o "mensual")
 fecha_inicio_inversion = "01/01/2024"  # Fecha de inicio
-#0.1088
+#---------------------------------------------------------------------------------------------
+
 # Calcular cronograma
 cronograma_inversionista_df, resumen_cronograma_inversionista_df = generar_cronograma_inversionista(monto_inversion, trea, num_desembolsos, tipo_desembolso, fecha_inicio_inversion)
+
+# Mostrar resumen
+print("\nResumen:")
+print(resumen_cronograma_inversionista_df)
 
 # Mostrar cronograma
 print("Cronograma de desembolsos:")
 print(cronograma_inversionista_df)
 
-# Mostrar resumen
-print("\nResumen:")
-
-print(resumen_cronograma_inversionista_df)
-
 
 # Mostrar el cronograma como imagen
 cronograma_a_imagen(cronograma_inversionista_df, resumen_cronograma_inversionista_df)
+
+# Nombre del archivo
+nombre_archivo = "Cronograma_Inversionista_prueba.xlsx"
+
+# Exportar a Excel
+exportar_a_excel(cronograma_inversionista_df, resumen_cronograma_inversionista_df, nombre_archivo)

@@ -1,89 +1,156 @@
 import os
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
-from io import BytesIO
+import emoji
 import base64
+
+from io import BytesIO
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
 from dotenv import load_dotenv
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import emoji
 
 #---------------------------------------------------------------------------------------------
-
 # GENERAR EL CRONOGRAMA DE PAGOS DEL PRESTATARIO
+#---------------------------------------------------------------------------------------------
 
-## Función para calcular el cronograma de cuotas del prestatario
-
-def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo):
+def calcular_tna(tea):
     """
-    Genera el cronograma de pagos para un prestatario.
+    Calcula la TNA (Tasa Nominal Anual) a partir de la TEA (Tasa Efectiva Anual).
     """
+    return (((1 + tea) ** (1 / 12) - 1) * 12) * (365 / 360)
 
-    if not (isinstance(monto_prestamo, (int, float)) and monto_prestamo >= 0):
-        raise ValueError("El monto debe ser mayor a 0.")
-    
-    if not (0 < tasa_interes <= 1):
-        raise ValueError("La tasa de interés debe er un número mayor a 0 y menor a 1.")
-    
-    if not (isinstance(num_cuotas, int) and num_cuotas > 0):
-        raise ValueError("El número de cuotas debe ser un entero positivo.")
-    
-    try:
-        fecha_inicio = datetime.strptime(fecha_inicio_prestamo, '%Y-%m-%d') # string parse time
-    except ValueError as e:
-        raise ValueError(f"La fecha de inicio del préstamo no tiene el formato correcto (YYYY-MM-DD): {e}")
-    
-    ### Calcular cuota mensual usando la fórmula de amortización
+def calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nombre_cliente, tipo_garantia):
+    """
+    Genera el cronograma de pagos para un crédito efectivo.
 
-    cronograma_prestatario = []
+    Parámetros:
+    - fecha_desembolso (str): Fecha del desembolso en formato '%d/%m/%Y'.
+    - importe_desembolsado (float): Monto del préstamo.
+    - tea (float): Tasa efectiva anual (en formato decimal, ej. 0.35 para 35%).
+    - td (float): Tasa de seguro desgravamen mensual (en formato decimal, ej. 0.00115).
+    - p (int): Número de cuotas.
+    - nombre_cliente (str): Nombre del cliente.
+    - tipo_garantia (str): Tipo de garantía ofrecida.
 
-    cuota_mensual = (monto_prestamo * tasa_interes) / (1 - (1 + tasa_interes) ** -num_cuotas)
+    Retorna:
+    - DataFrame con el cronograma de pagos.
+    - DataFrame con el resumen del préstamo.
+    """
+    # Convertir la fecha de desembolso a un objeto datetime
+    fecha_desembolso = datetime.strptime(fecha_desembolso, '%d/%m/%Y')
 
-    saldo_pendiente = monto_prestamo
+    # Calcular TNA
+    tna = calcular_tna(tea)
 
-    total_intereses = 0
+    # Inicializar variables
+    saldo = importe_desembolsado
+    interes_acumulado = 0
+    seguro_desgravamen_acumulado = 0
+    cronograma = []
 
-    for i in range(1, num_cuotas + 1): # num_cuotas iteraciones empezando en 1 y terminando en num_cuotas
+    # Calcular la cuota referencial (cuota constante)
+    cuota_referencial = None
 
-        #### Cálculo del interés por cada periodo:
-        interes_mensual = saldo_pendiente * tasa_interes
+    for i in range(1, p + 1):
+        # Calcular días del periodo
+        if i == 1:
+            dias_periodo = (fecha_desembolso + relativedelta(months=1) - fecha_desembolso).days + 1
+        else:
+            dias_periodo = (fecha_desembolso + relativedelta(months=i) - (fecha_desembolso + relativedelta(months=i - 1))).days
 
-        #### Cálculo del capital amortiado
-        capital_amortizado = cuota_mensual - interes_mensual
+        # Calcular tasa ajustada al periodo (i)
+        tasa_ajustada = (tna / 365) * dias_periodo
 
-        #### Cálculo del saldo pendiente:
-        saldo_pendiente -= capital_amortizado
+        # Calcular seguro de desgravamen ajustado al periodo (d)
+        tda = td * 12
+        tasa_seguro = (tda / 360) * dias_periodo
 
-        #### Cálculo del total de intereses:
-        total_intereses += interes_mensual
+        # Si no se ha calculado la cuota referencial, calcularla
+        if cuota_referencial is None:
+            cuota_referencial = saldo * ((tasa_ajustada + tasa_seguro) / (1 - (1 + tasa_ajustada + tasa_seguro) ** -p))
 
-        #### Fecha de pago de cada cuota
-        fecha_pago = fecha_inicio + relativedelta(months = i)  # Sumar i meses a la fecha_inicio_prestamo
+        # Calcular interés mensual
+        interes_mensual = saldo * tasa_ajustada
 
-        #### Estructura del cronograma:
-        cronograma_prestatario.append({
+        # Calcular seguro de desgravamen mensual
+        seguro_desgravamen_mensual = saldo * tasa_seguro
 
-            'Fecha de Pago': fecha_pago.strftime('%d/%m/%Y'),
-            'Cuota (S/)': round(cuota_mensual, 2),
-            'Interés (S/)': round(interes_mensual, 2),
-            'Capital (S/)': round(capital_amortizado, 2),
-            'Saldo Pendiente (S/)': round(saldo_pendiente if saldo_pendiente > 0 else 0, 2)  # Evitar saldo negativo al final
+        # Calcular amortización mensual
+        amortizacion_mensual = cuota_referencial - interes_mensual - seguro_desgravamen_mensual
+
+        # Actualizar saldo
+        saldo -= amortizacion_mensual
+
+        # Actualizar acumulados
+        interes_acumulado += interes_mensual
+        seguro_desgravamen_acumulado += seguro_desgravamen_mensual
+
+        # Agregar datos al cronograma
+        cronograma.append({
+            "N° Cuota": i,
+            "Fecha de Pago": (fecha_desembolso + relativedelta(months=i)).strftime('%d/%m/%Y'),
+            "Días del Periodo": dias_periodo,
+            "Saldo (S/)": round(saldo if saldo > 0 else 0, 2),
+            "Interés Mensual (S/)": round(interes_mensual, 2),
+            "Seguro Desgravamen (S/)": round(seguro_desgravamen_mensual, 2),
+            "Amortización (S/)": round(amortizacion_mensual, 2),
+            "Cuota (S/)": round(cuota_referencial, 2)
         })
+    
+    # Calcular la fecha final del pago
+    fecha_final_pago = (fecha_desembolso + relativedelta(months=p)).strftime('%d/%m/%Y')
 
-    # Resumen
-    resumen_cronograma_prestatario = {
-        "Monto del préstamo (S/)": monto_prestamo,
-        "Tasa de interés (%)": round(tasa_interes * 100, 2),
-        "Fecha de préstamo": fecha_inicio.strftime('%d/%m/%Y'),
-        "Frecuencia de pago": 'Mensual',
-        "Cantidad de cuotas": num_cuotas,
-        "Total Intereses (S/)": round(total_intereses ,2),
-        "Total a Pagar (S/)": round(cuota_mensual * num_cuotas, 2)
+    # Crear el resumen del préstamo
+    resumen = {
+        "Nombre del Cliente": nombre_cliente,
+        "Tipo de Garantía": tipo_garantia,
+        "Importe del Préstamo (S/)": round(importe_desembolsado, 2),
+        "Intereses Totales (S/)": round(interes_acumulado, 2),
+        "Importe Total a Pagar (S/)": round(cuota_referencial * p, 2),
+        "Fecha del Préstamo": fecha_desembolso.strftime('%d/%m/%Y'),
+        "Fecha Final de Pago": fecha_final_pago,
+        "Cuotas por Pagar": p,
+        "Periodicidad": "Mensual",
+        "TEA (%)": round(tea * 100, 2)
     }
 
-    return pd.DataFrame(cronograma_prestatario), pd.DataFrame([resumen_cronograma_prestatario])
+    # Convertir el cronograma a un DataFrame
+    cronograma_prestatario_df = pd.DataFrame(cronograma)
+
+    resumen_cronograma_prestatario_df = pd.DataFrame([resumen]).T
+    resumen_cronograma_prestatario_df.columns = [""]
+    
+    return cronograma_prestatario_df, resumen_cronograma_prestatario_df
+
+def mostrar_curva_interes(cronograma_prestatario_df):
+    """
+    Muestra la curva del interés a lo largo de las cuotas, asegurando que se muestren todas las cuotas en el eje X.
+    """
+    # Extraer los datos
+    cuotas = cronograma_prestatario_df["N° Cuota"]
+    intereses = cronograma_prestatario_df["Interés Mensual (S/)"]
+
+    # Crear la figura y el eje
+    plt.figure(figsize=(10, 6))
+    plt.plot(cuotas, intereses, marker='o', label="Interés mensual (S/)", color='b')
+
+    # Configurar el gráfico
+    plt.title("Curva del Interés Mensual")
+    plt.xlabel("N° de Cuota")
+    plt.ylabel("Interés Mensual (S/)")
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.legend()
+
+    # Configurar los ticks del eje X para mostrar todas las cuotas
+    plt.xticks(ticks=cuotas, labels=cuotas, rotation=45)
+
+    plt.tight_layout()
+
+    # Mostrar la curva
+    plt.show()
 
 #---------------------------------------------------------------------------------------------
 
@@ -91,7 +158,7 @@ def generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fec
 
 ## Función para convertir el cronograma a una imagen:
 
-def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df, total_intereses, num_cuotas):
+def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df, total_intereses, p):
 
     """
     Convierte el cronograma a una imagen y la muestra con el resumen.
@@ -130,7 +197,7 @@ def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatari
     terminos_condiciones = (
         f"- No incluye el ITF en caso de requerir.\n"
         f"- La tasa de interés es fija.\n"
-        f"- Cargo por pago atrasado (S/): {round(total_intereses * 0.01 / num_cuotas, 2)} por día.\n"
+        f"- Cargo por pago atrasado (S/): {round(total_intereses * 0.01 / p, 2)} por día.\n"
         f"- Máximo 7 días de espera después de vencida la cuota."
     )
     ### Agregar los términos y condiciones al footer:
@@ -152,6 +219,21 @@ def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatari
 
     return image_buffer
 
+def exportar_a_excel(cronograma_prestatario_df, resumen_cronograma_prestatario_df, nombre_archivo):
+    """
+    Exporta el cronograma y el resumen a un archivo de Excel con el nombre especificado.
+    """
+    # Agregar la columna "Estado de la cuota" al cronograma
+    cronograma_prestatario_df["Estado de la cuota"] = "Pendiente"
+
+    with pd.ExcelWriter(nombre_archivo, engine='xlsxwriter') as writer:
+        # Exportar el resumen al primer sheet
+        resumen_cronograma_prestatario_df.T.to_excel(writer, sheet_name="Resumen", startrow=0, startcol=0, header=False)
+
+        # Exportar el cronograma al segundo sheet
+        cronograma_prestatario_df.to_excel(writer, sheet_name="Cronograma", index=False)
+
+    print(f"Archivo Excel '{nombre_archivo}' generado exitosamente.")
 #---------------------------------------------------------------------------------------------
 
 # ENVIAR LA IMAGEN DEL CRONOGRAMA DE PAGOS POR CORREO (SENDGRID)
@@ -168,11 +250,11 @@ print("API Key:", sendgrid_api_key)  # Para asegurarte de que se cargó correcta
 
 ## Función para enviar el correo con la imagen adjunta
 
-def enviar_correo_con_imagen(correo_destinatario,correo_destino, asunto, cuerpo, cronograma_cuotas_df, monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen):
+def enviar_correo_con_imagen(correo_destinatario,correo_destino, asunto, cuerpo, cronograma_cuotas_df, monto_prestamo, tasa_interes_anual, num_cuotas, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen):
 
     ### Generar la imagen del cronograma
 
-    imagen_buffer = cronograma_a_imagen(cronograma_cuotas_df, monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen)
+    imagen_buffer = cronograma_a_imagen(cronograma_cuotas_df, monto_prestamo, tasa_interes_anual, num_cuotas, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen)
 
     ### Convertir la imagen a base64
 
@@ -218,24 +300,40 @@ def enviar_correo_con_imagen(correo_destinatario,correo_destino, asunto, cuerpo,
 
 # Generar el cronograma de pagos
 
-# Ejemplo de uso
-monto_prestamo = 1500  # Monto del préstamo
-tasa_interes = 0.13  # Tasa de interés (5%)
-num_cuotas = 4  # Número de cuotas
-fecha_inicio_prestamo = "2025-01-02"  # Fecha de inicio del préstamo
+# Datos de entrada
+fecha_desembolso = "30/09/2024"
+importe_desembolsado = 1500
+tea = 1.4575
+p = 4 #Número de cuotas
+nombre_cliente = "Leonardo"
+tipo_garantia = "Garantía Personal"
 
-# Generar cronograma y resumen
-cronograma_prestatario_df, resumen_cronograma_prestatario_df = generar_cronograma_prestatario(monto_prestamo, tasa_interes, num_cuotas, fecha_inicio_prestamo)
+# Constantes:
+td = 0 # 0.00115 en los bancos
 
-# Imprimir el cronograma de pagos
+cronograma_prestatario_df, resumen_cronograma_prestatario_df = calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nombre_cliente, tipo_garantia)
 
-print(cronograma_prestatario_df)
+# Mostrar el resumen del préstamo
+print("Resumen del Préstamo:")
 print(resumen_cronograma_prestatario_df)
 
+# Mostrar el cronograma de pagos
+print("\nCronograma de Pagos:")
+print(cronograma_prestatario_df)
+
+# Mostrar la curva del interés
+mostrar_curva_interes(cronograma_prestatario_df)
 
 # Mostrar la imagen antes de enviar el correo
 
-cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df, resumen_cronograma_prestatario_df["Total Intereses (S/)"][0], num_cuotas)
+cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df, resumen_cronograma_prestatario_df["Total Intereses (S/)"][0], p)
+
+# Nombre del archivo
+nombre_archivo = "Cronograma_Prestatario_Codigo.xlsx"
+
+# Exportar a Excel
+exportar_a_excel(cronograma_prestatario_df,resumen_cronograma_prestatario_df, nombre_archivo)
+
 
 # Enviar el correo con el cronograma como imagen adjunta
 
@@ -247,7 +345,7 @@ enviar_correo_con_imagen(
     cuerpo = '<p>Adjunto encontrarás el cronograma de pagos del préstamo solicitado.</p>',
     cronograma_df = cronograma_prestatario_df,
     monto_prestamo=monto_prestamo,
-    tasa_interes=tasa_interes,
+    tasa_interes_anual=tasa_interes_anual,
     num_cuotas=num_cuotas,
     fecha_inicio_prestamo=fecha_inicio_prestamo,
     cuota_mensual=cuota_mensual,
