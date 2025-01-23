@@ -135,7 +135,7 @@ def cronograma_a_imagen(cronograma_inversionista_df, resumen_cronograma_inversio
     ax.axis('off')  # Ocultar los ejes
 
     # Mostrar el resumen primero
-    ax.text(0.5, 0.95, "Resumen del Cronograma", fontsize=16, ha="center", va="top", weight="bold")
+    ax.text(0.5, 0.95, "Resumen del Cronograma", fontsize=12, ha="center", va="top", weight="bold")
     tabla_resumen = ax.table(
         cellText=resumen_cronograma_inversionista_df.values,
         rowLabels=resumen_cronograma_inversionista_df.index,
@@ -144,7 +144,7 @@ def cronograma_a_imagen(cronograma_inversionista_df, resumen_cronograma_inversio
         bbox=[0.45, 0.7, 0.25, 0.2]  # [left, bottom, width, height]
     )
     tabla_resumen.auto_set_font_size(False)
-    tabla_resumen.set_fontsize(12)
+    tabla_resumen.set_fontsize(10)
     tabla_resumen.scale(1.2, 1.2)
 
     # Eliminar bordes de las celdas en la tabla de resumen
@@ -152,7 +152,7 @@ def cronograma_a_imagen(cronograma_inversionista_df, resumen_cronograma_inversio
         cell.set_linewidth(0)  # Establecer el ancho del borde en 0
 
     # Mostrar el cronograma después
-    ax.text(0.5, 0.65, "Cronograma", fontsize=14, ha="center", va="top", weight="bold")
+    ax.text(0.5, 0.65, "Cronograma", fontsize=12, ha="center", va="top", weight="bold")
     tabla_cronograma = ax.table(
         cellText=cronograma_inversionista_df.values,
         colLabels=cronograma_inversionista_df.columns,
@@ -173,7 +173,7 @@ def exportar_a_excel(cronograma_inversionista_df, resumen_cronograma_inversionis
     Exporta el cronograma y el resumen a un archivo de Excel con el nombre especificado.
     """
     # Agregar la columna "Estado de la cuota" al cronograma
-    cronograma_inversionista_df["Estado de la cuota"] = "Pendiente"
+    cronograma_inversionista_df["Estado del desembolso"] = "Pendiente"
 
     with pd.ExcelWriter(nombre_archivo, engine='xlsxwriter') as writer:
         # Exportar el resumen al primer sheet

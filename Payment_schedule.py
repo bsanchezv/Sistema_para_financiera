@@ -105,16 +105,16 @@ def calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nomb
 
     # Crear el resumen del préstamo
     resumen = {
-        "Nombre del Cliente": nombre_cliente,
-        "Tipo de Garantía": tipo_garantia,
-        "Importe del Préstamo (S/)": round(importe_desembolsado, 2),
-        "Intereses Totales (S/)": round(interes_acumulado, 2),
-        "Importe Total a Pagar (S/)": round(cuota_referencial * p, 2),
-        "Fecha del Préstamo": fecha_desembolso.strftime('%d/%m/%Y'),
-        "Fecha Final de Pago": fecha_final_pago,
-        "Cuotas por Pagar": p,
-        "Periodicidad": "Mensual",
-        "TEA (%)": round(tea * 100, 2)
+        "Nombre del Cliente:": nombre_cliente,
+        "Tipo de Garantía:": tipo_garantia,
+        "Importe del Préstamo (S/):": round(importe_desembolsado, 2),
+        "Intereses Totales (S/):": round(interes_acumulado, 2),
+        "Importe Total a Pagar (S/):": round(cuota_referencial * p, 2),
+        "Fecha del Préstamo:": fecha_desembolso.strftime('%d/%m/%Y'),
+        "Fecha Final de Pago.": fecha_final_pago,
+        "Cuotas por Pagar:": p,
+        "Periodicidad:": "Mensual",
+        "TEA (%):": round(tea * 100, 2)
     }
 
     # Convertir el cronograma a un DataFrame
@@ -125,33 +125,6 @@ def calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nomb
     
     return cronograma_prestatario_df, resumen_cronograma_prestatario_df
 
-def mostrar_curva_interes(cronograma_prestatario_df):
-    """
-    Muestra la curva del interés a lo largo de las cuotas, asegurando que se muestren todas las cuotas en el eje X.
-    """
-    # Extraer los datos
-    cuotas = cronograma_prestatario_df["N° Cuota"]
-    intereses = cronograma_prestatario_df["Interés Mensual (S/)"]
-
-    # Crear la figura y el eje
-    plt.figure(figsize=(10, 6))
-    plt.plot(cuotas, intereses, marker='o', label="Interés mensual (S/)", color='b')
-
-    # Configurar el gráfico
-    plt.title("Curva del Interés Mensual")
-    plt.xlabel("N° de Cuota")
-    plt.ylabel("Interés Mensual (S/)")
-    plt.grid(True, linestyle='--', alpha=0.6)
-    plt.legend()
-
-    # Configurar los ticks del eje X para mostrar todas las cuotas
-    plt.xticks(ticks=cuotas, labels=cuotas, rotation=45)
-
-    plt.tight_layout()
-
-    # Mostrar la curva
-    plt.show()
-
 #---------------------------------------------------------------------------------------------
 
 # CONVERTIR EL CRONOGRAMA EN IMAGEN
@@ -159,35 +132,38 @@ def mostrar_curva_interes(cronograma_prestatario_df):
 ## Función para convertir el cronograma a una imagen:
 
 def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df, total_intereses, p):
-
     """
     Convierte el cronograma a una imagen y la muestra con el resumen.
     """
     # Crear figura y ejes
     fig, ax = plt.subplots(figsize=(12, 10))
-    ax.axis('on')  # Ocultar los ejes en off
+    ax.axis('on')  # Mostrar los ejes
 
     # Mostrar el resumen primero
-    ax.text(0.5, 0.97, "Resumen del Cronograma", fontsize=14, ha="center", va="center", weight="bold")
+    ax.text(0.5, 0.95, "Resumen del Cronograma", fontsize=12, ha="center", va="top", weight="bold")
     tabla_resumen = ax.table(
         cellText=resumen_cronograma_prestatario_df.values,
-        colLabels=resumen_cronograma_prestatario_df.columns,
+        rowLabels=resumen_cronograma_prestatario_df.index,
         cellLoc='center',
         loc='center',
-        bbox=[0.1, 0.75, 0.8, 0.2]  # [left, bottom, width, height]
+        bbox=[0.5, 0.7, 0.2, 0.2]  # [left, bottom, width, height]
     )
     tabla_resumen.auto_set_font_size(False)
     tabla_resumen.set_fontsize(10)
     tabla_resumen.scale(1.2, 1.2)
 
+    # Eliminar bordes de las celdas en la tabla de resumen
+    for key, cell in tabla_resumen.get_celld().items():
+        cell.set_linewidth(0)  # Establecer el ancho del borde en 0
+
     # Mostrar el cronograma después
-    ax.text(0.5, 0.72, "Cronograma de Pagos", fontsize=14, ha="center", va="center", weight="bold")
+    ax.text(0.5, 0.65, "Cronograma de Pagos", fontsize=12, ha="center", va="center", weight="bold")
     tabla_cronograma = ax.table(
         cellText=cronograma_prestatario_df.values,
         colLabels=cronograma_prestatario_df.columns,
         cellLoc='center',
         loc='center',
-        bbox=[0.1, 0.2, 0.8, 0.5]  # [left, bottom, width, height]
+        bbox=[0.1, 0.25, 0.8, 0.3]  # [left, bottom, width, height]
     )
     tabla_cronograma.auto_set_font_size(False)
     tabla_cronograma.set_fontsize(8)
@@ -200,10 +176,10 @@ def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatari
         f"- Cargo por pago atrasado (S/): {round(total_intereses * 0.01 / p, 2)} por día.\n"
         f"- Máximo 7 días de espera después de vencida la cuota."
     )
-    ### Agregar los términos y condiciones al footer:
-    ax.text(0.5, 0.05, terminos_condiciones, ha='center', va='center', fontsize=10, wrap=True)
+    # Agregar los términos y condiciones al footer:
+    plt.text(0.5, 0.05, terminos_condiciones, ha='center', va='center', fontsize=8, wrap=True)
 
-    # Mostrar la imagen directamente
+    # Ajustar diseño
     plt.tight_layout()
     plt.show()
 
@@ -228,7 +204,7 @@ def exportar_a_excel(cronograma_prestatario_df, resumen_cronograma_prestatario_d
 
     with pd.ExcelWriter(nombre_archivo, engine='xlsxwriter') as writer:
         # Exportar el resumen al primer sheet
-        resumen_cronograma_prestatario_df.T.to_excel(writer, sheet_name="Resumen", startrow=0, startcol=0, header=False)
+        resumen_cronograma_prestatario_df.to_excel(writer, sheet_name="Resumen", startrow=0, startcol=0, header=False)
 
         # Exportar el cronograma al segundo sheet
         cronograma_prestatario_df.to_excel(writer, sheet_name="Cronograma", index=False)
@@ -294,6 +270,34 @@ def enviar_correo_con_imagen(correo_destinatario,correo_destino, asunto, cuerpo,
     except Exception as e:
         print(emoji.emojize(f"Error al enviar el correo: {e} :no_entry:"))
 
+
+def mostrar_curva_interes(cronograma_prestatario_df):
+    """
+    Muestra la curva del interés a lo largo de las cuotas, asegurando que se muestren todas las cuotas en el eje X.
+    """
+    # Extraer los datos
+    cuotas = cronograma_prestatario_df["N° Cuota"]
+    intereses = cronograma_prestatario_df["Interés Mensual (S/)"]
+
+    # Crear la figura y el eje
+    plt.figure(figsize=(10, 6))
+    plt.plot(cuotas, intereses, marker='o', label="Interés mensual (S/)", color='b')
+
+    # Configurar el gráfico
+    plt.title("Curva del Interés Mensual")
+    plt.xlabel("N° de Cuota")
+    plt.ylabel("Interés Mensual (S/)")
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.legend()
+
+    # Configurar los ticks del eje X para mostrar todas las cuotas
+    plt.xticks(ticks=cuotas, labels=cuotas, rotation=45)
+
+    plt.tight_layout()
+
+    # Mostrar la curva
+    plt.show()
+
 #---------------------------------------------------------------------------------------------
 
 # LLAMADA A LAS FUNCIONES
@@ -307,8 +311,6 @@ tea = 1.4575
 p = 4 #Número de cuotas
 nombre_cliente = "Leonardo"
 tipo_garantia = "Garantía Personal"
-
-# Constantes:
 td = 0 # 0.00115 en los bancos
 
 cronograma_prestatario_df, resumen_cronograma_prestatario_df = calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nombre_cliente, tipo_garantia)
@@ -321,15 +323,13 @@ print(resumen_cronograma_prestatario_df)
 print("\nCronograma de Pagos:")
 print(cronograma_prestatario_df)
 
-# Mostrar la curva del interés
-mostrar_curva_interes(cronograma_prestatario_df)
-
 # Mostrar la imagen antes de enviar el correo
+total_intereses = cronograma_prestatario_df["Interés Mensual (S/)"].sum()
 
-cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df, resumen_cronograma_prestatario_df["Total Intereses (S/)"][0], p)
+cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df,total_intereses, p)
 
 # Nombre del archivo
-nombre_archivo = "Cronograma_Prestatario_Codigo.xlsx"
+nombre_archivo = "Cronograma_Prestatario_Prueba.xlsx"
 
 # Exportar a Excel
 exportar_a_excel(cronograma_prestatario_df,resumen_cronograma_prestatario_df, nombre_archivo)
@@ -354,3 +354,8 @@ enviar_correo_con_imagen(
     mostrar_imagen=False
 
 )
+
+
+# Mostrar la curva del interés
+mostrar_curva_interes(cronograma_prestatario_df)
+
