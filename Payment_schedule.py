@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 import emoji
 import base64
 
-from io import BytesIO
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+#from io import BytesIO
+#from sendgrid import SendGridAPIClient
+#from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
 from dotenv import load_dotenv
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -22,7 +22,7 @@ def calcular_tna(tea):
     """
     return (((1 + tea) ** (1 / 12) - 1) * 12) * (365 / 360)
 
-def calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nombre_cliente, tipo_garantia):
+def calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nombre_cliente, tipo_garantia, dias_periodo, dias_mes):
     """
     Genera el cronograma de pagos para un crédito efectivo.
 
@@ -42,49 +42,51 @@ def calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nomb
     # Convertir la fecha de desembolso a un objeto datetime
     fecha_desembolso = datetime.strptime(fecha_desembolso, '%d/%m/%Y')
 
-    # Calcular TNA
+    # Definir saldo inicial
+    saldo = importe_desembolsado
+
+    # 1. Calcular la tasa nominal
     tna = calcular_tna(tea)
 
-    # Inicializar variables
-    saldo = importe_desembolsado
+    # 2. Calcular la tasa ajustada al plazo
+    tasa_ajustada = (tna / 365) * dias_periodo
+
+    # 4. Calcular la TDA (tasa de seguro de desgravamen anual)
+    tda = td * 12
+
+    # 5. Calcular la tasa ajustada al plazo para el seguro de desgravamen (d)
+    tasa_seguro = (tda / 360) * dias_mes
+
+    # 3. Calcular el interés mensual
+    interes_mensual = saldo * tasa_ajustada
+
+    # 7. Calcular la cuota referencial (usando la fórmula de cuota constante)
+    cuota_referencial = saldo * ((tasa_ajustada + tasa_seguro) / (1 - (1 + tasa_ajustada + tasa_seguro) ** (-p)))
+
+    # Inicializar variables para el cronograma:
     interes_acumulado = 0
     seguro_desgravamen_acumulado = 0
     cronograma = []
 
-    # Calcular la cuota referencial (cuota constante)
-    cuota_referencial = None
-
     for i in range(1, p + 1):
-        # Calcular días del periodo
-        if i == 1:
-            dias_periodo = (fecha_desembolso + relativedelta(months=1) - fecha_desembolso).days + 1
-        else:
-            dias_periodo = (fecha_desembolso + relativedelta(months=i) - (fecha_desembolso + relativedelta(months=i - 1))).days
-
-        # Calcular tasa ajustada al periodo (i)
-        tasa_ajustada = (tna / 365) * dias_periodo
-
-        # Calcular seguro de desgravamen ajustado al periodo (d)
-        tda = td * 12
-        tasa_seguro = (tda / 360) * dias_periodo
-
-        # Si no se ha calculado la cuota referencial, calcularla
-        if cuota_referencial is None:
-            cuota_referencial = saldo * ((tasa_ajustada + tasa_seguro) / (1 - (1 + tasa_ajustada + tasa_seguro) ** -p))
-
-        # Calcular interés mensual
+        
+        # 1. Calcular interés mensual
         interes_mensual = saldo * tasa_ajustada
 
-        # Calcular seguro de desgravamen mensual
+        # 2. Calcular seguro de desgravamen mensual
         seguro_desgravamen_mensual = saldo * tasa_seguro
 
-        # Calcular amortización mensual
-        amortizacion_mensual = cuota_referencial - interes_mensual - seguro_desgravamen_mensual
+        # 3. Calcular amortización mensual
+        amortizacion_mensual = cuota_referencial - (interes_mensual + seguro_desgravamen_mensual)
 
-        # Actualizar saldo
+        # Evitar saldo negativo en la última cuota
+        if saldo - amortizacion_mensual < 0:
+            amortizacion_mensual = saldo
+        
+        # 4. Actualizar saldo
         saldo -= amortizacion_mensual
 
-        # Actualizar acumulados
+        # 5. Actualizar acumulados
         interes_acumulado += interes_mensual
         seguro_desgravamen_acumulado += seguro_desgravamen_mensual
 
@@ -305,15 +307,18 @@ def mostrar_curva_interes(cronograma_prestatario_df):
 # Generar el cronograma de pagos
 
 # Datos de entrada
-fecha_desembolso = "27/01/2025"
-importe_desembolsado = 31000
-tea =  230.90
-p = 60 #Número de cuotas
+fecha_desembolso = "29/01/2025"
+importe_desembolsado = 8500
+tea =  1.7049
+p = 30 #Número de cuotas
 nombre_cliente = "Marcos Leonardo Ronceros Ramírez"
 tipo_garantia = "Garantía Personal"
-td = 0 # 0.00115 en los bancos
+td = 0 / 100 # 0.00115 en los bancos
 
-cronograma_prestatario_df, resumen_cronograma_prestatario_df = calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nombre_cliente, tipo_garantia)
+dias_periodo = 32
+dias_mes = 31
+
+cronograma_prestatario_df, resumen_cronograma_prestatario_df = calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nombre_cliente, tipo_garantia, dias_periodo, dias_mes)
 
 # Mostrar el resumen del préstamo
 print("Resumen del Préstamo:")
