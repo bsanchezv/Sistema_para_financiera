@@ -1,4 +1,4 @@
-def calcular_tasa_interes(tasa_referencial, inflacion, id_cat_cliente, garantia_prestamo, score_crediticio, monto_prestamo, num_cuotas, id_profesion, edad):
+def calcular_tea(tasa_referencial, inflacion, id_cat_cliente, garantia_prestamo, score_crediticio, monto_prestamo, num_cuotas, id_profesion, edad):
 
     # Ajuste por tasa referencial
     ajuste_tasa_referencial = tasa_referencial
@@ -186,7 +186,7 @@ def calcular_tasa_interes(tasa_referencial, inflacion, id_cat_cliente, garantia_
         ajuste_garantia = 0.9171
 
     # Calcular la tasa final
-    tasa_interes = (
+    tea = (
         ajuste_tasa_referencial * 1
         + ajuste_inflacion * 2
         + ajuste_categoria * 1.000
@@ -198,14 +198,14 @@ def calcular_tasa_interes(tasa_referencial, inflacion, id_cat_cliente, garantia_
         + ajuste_edad * 0.1429
     )
 
-    return round(tasa_interes, 4)
+    return round(tea, 4)
 
 
 #DATOS
 
 #Datos del préstamo
 monto_prestamo = 8500  # Monto del préstamo solicitado
-num_cuotas = 30  # Número de cuotas del préstamo
+num_cuotas = 24  # Número de cuotas del préstamo
 garantia_prestamo = "Garantía Personal"  # Garantía ofrecida
 
 #Datos del prestatario
@@ -220,7 +220,7 @@ tasa_referencial = 4.75 / 100  # BRCP
 inflacion = 2.45 / 100  # Inflación actual en porcentaje
 
 # Calcular la tasa de interés
-tasa = calcular_tasa_interes(
+tasa = calcular_tea(
     tasa_referencial,
     inflacion,
     id_cat_cliente,

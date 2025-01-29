@@ -15,12 +15,215 @@ from dateutil.relativedelta import relativedelta
 #---------------------------------------------------------------------------------------------
 # GENERAR EL CRONOGRAMA DE PAGOS DEL PRESTATARIO
 #---------------------------------------------------------------------------------------------
+def calcular_tea(tasa_referencial, inflacion, id_cat_cliente, tipo_garantia, score_crediticio, importe_desembolsado, p, id_profesion, edad):
+
+    # Ajuste por tasa referencial
+    ajuste_tasa_referencial = tasa_referencial
+
+    # Ajuste por inflación
+    ajuste_inflacion = inflacion  
+
+    # Ajuste por categoría del cliente
+    if id_cat_cliente == 11:  # Categoría F
+        raise ValueError("El cliente tiene más de 4 atrasos y no puede generar un préstamo hasta que termine el semestre actual.")
+    elif id_cat_cliente == 10:  # Categoría D
+        ajuste_categoria = 0.9171
+    elif id_cat_cliente == 9:  # Categoría D+
+        ajuste_categoria = 0.8165
+    elif id_cat_cliente == 8:  # Categoría C-
+        ajuste_categoria = 0.7159
+    elif id_cat_cliente == 7:  # Categoría C
+        ajuste_categoria = 0.6153
+    elif id_cat_cliente == 6:  # Categoría C+
+        ajuste_categoria = 0.5147
+    elif id_cat_cliente == 5:  # Categoría B-
+        ajuste_categoria = 0.4140
+    elif id_cat_cliente == 4:  # Categoría B
+        ajuste_categoria = 0.3134
+    elif id_cat_cliente == 3:  # Categoría B+
+        ajuste_categoria = 0.2128
+    elif id_cat_cliente == 2:  # Categoría A-
+        ajuste_categoria = 0.1122
+    else:  # Categoría A
+        ajuste_categoria = 0.0116
+
+    # Ajuste por score crediticio
+    if 979 <= score_crediticio <= 1000:
+        ajuste_score = 0.0116
+    elif 924 <= score_crediticio < 979:
+        ajuste_score = 0.2380
+    elif 900 <= score_crediticio < 924:
+        ajuste_score = 0.4644
+    elif 675 <= score_crediticio < 900:
+        ajuste_score = 0.6907
+    else:
+        ajuste_score = 0.9171
+
+    # Ajuste por monto del préstamo
+    if importe_desembolsado > 10352:
+        ajuste_monto = 0.0116
+    elif 9955 <= importe_desembolsado < 10352:
+        ajuste_monto = 0.0464
+    elif 9558 <= importe_desembolsado < 9955:
+        ajuste_monto = 0.0813
+    elif 9161 <= importe_desembolsado < 9558:
+        ajuste_monto = 0.1161
+    elif 8764 <= importe_desembolsado < 9161:
+        ajuste_monto = 0.1509
+    elif 8367 <= importe_desembolsado < 8764:
+        ajuste_monto = 0.1857
+    elif 7970 <= importe_desembolsado < 8367:
+        ajuste_monto = 0.2206
+    elif 7573 <= importe_desembolsado < 7970:
+        ajuste_monto = 0.2554
+    elif 7176 <= importe_desembolsado < 7573:
+        ajuste_monto = 0.2902
+    elif 6779 <= importe_desembolsado < 7176:
+        ajuste_monto = 0.3250
+    elif 6382 <= importe_desembolsado < 6779:
+        ajuste_monto = 0.3599
+    elif 5985 <= importe_desembolsado < 6382:
+        ajuste_monto = 0.3947
+    elif 5588 <= importe_desembolsado < 5985:
+        ajuste_monto = 0.4295
+    elif 5191 <= importe_desembolsado < 5588:
+        ajuste_monto = 0.4644
+    elif 4794 <= importe_desembolsado < 5191:
+        ajuste_monto = 0.4992
+    elif 4397 <= importe_desembolsado < 4794:
+        ajuste_monto = 0.5340
+    elif 4000 <= importe_desembolsado < 4397:
+        ajuste_monto = 0.5688
+    elif 3603 <= importe_desembolsado < 4000:
+        ajuste_monto = 0.6037
+    elif 3206 <= importe_desembolsado < 3603:
+        ajuste_monto = 0.6385
+    elif 2809 <= importe_desembolsado < 3206:
+        ajuste_monto = 0.6733
+    elif 2412 <= importe_desembolsado < 2809:
+        ajuste_monto = 0.7081
+    elif 2015 <= importe_desembolsado < 2412:
+        ajuste_monto = 0.7430
+    elif 1618 <= importe_desembolsado < 2015:
+        ajuste_monto = 0.7778
+    elif 1221 <= importe_desembolsado < 1618:
+        ajuste_monto = 0.8126
+    elif 824 <= importe_desembolsado < 1221:
+        ajuste_monto = 0.8474
+    elif 427 <= importe_desembolsado < 824:
+        ajuste_monto = 0.8823
+    elif 100 <= importe_desembolsado < 427:
+        ajuste_monto = 0.9171
+    else:  # 0.01 <= importe_desembolsado < 30
+        raise ValueError("El monto debe ser mayor o igual a S/100.")
+
+    # Ajuste por número de cuotas
+    if 1 <= p < 2:
+        ajuste_cuotas = 0.0116
+    elif 2 <= p < 3:
+        ajuste_cuotas = 0.0464
+    elif 3 <= p < 4:
+        ajuste_cuotas = 0.0813
+    elif 4 <= p < 5:
+        ajuste_cuotas = 0.1161
+    elif 5 <= p < 7:
+        ajuste_cuotas = 0.1509
+    elif 7 <= p < 8:
+        ajuste_cuotas = 0.1857
+    elif 8 <= p < 9:
+        ajuste_cuotas = 0.2206
+    elif 9 <= p < 10:
+        ajuste_cuotas = 0.2554
+    elif 10 <= p < 11:
+        ajuste_cuotas = 0.2902
+    elif 11 <= p < 12:
+        ajuste_cuotas = 0.32050
+    elif 12 <= p < 13:
+        ajuste_cuotas = 0.3599
+    elif 13 <= p < 14:
+        ajuste_cuotas = 0.3947
+    elif 14 <= p < 15:
+        ajuste_cuotas = 0.4295
+    elif 15 <= p < 16:
+        ajuste_cuotas = 0.4644
+    elif 16 <= p < 18:
+        ajuste_cuotas = 0.4992
+    elif 18 <= p < 19:
+        ajuste_cuotas = 0.5340
+    elif 19 <= p < 20:
+        ajuste_cuotas = 0.5688
+    elif 20 <= p < 21:
+        ajuste_cuotas = 0.6037
+    elif 21 <= p < 22:
+        ajuste_cuotas = 0.6385
+    elif 22 <= p < 23:
+        ajuste_cuotas = 0.6733
+    elif 23 <= p < 24:
+        ajuste_cuotas = 0.7081
+    elif 24 <= p < 25:
+        ajuste_cuotas = 0.7430
+    elif 25 <= p < 26:
+        ajuste_cuotas = 0.7778
+    elif 26 <= p < 27:
+        ajuste_cuotas = 0.8126
+    elif 27 <= p < 29:
+        ajuste_cuotas = 0.8474
+    elif 29 <= p < 30:
+        ajuste_cuotas = 0.8823
+    elif 30 <= p < 31:
+        ajuste_cuotas = 0.9171
+    else:
+        raise ValueError("El número de cuotas está fuera del rango permitido.")
+
+    # Ajuste por edad
+    if 18 <= edad < 24:
+        ajuste_edad = 0.4644
+    elif 24 <= edad < 51:
+        ajuste_edad = 0.0116
+    elif 51 <= edad < 65:
+        ajuste_edad = 0.9171
+    else:
+        raise ValueError("La edad del cliente está fuera del rango permitido.")
+
+    # Ajuste por profesión
+    if id_profesion in ["medico", "ingeniero", "empleado_publico"]:
+        ajuste_profesion = 0.0116
+    elif id_profesion in ["comerciante", "emprendedor"]:
+        ajuste_profesion = 0.4644
+    else:
+        ajuste_profesion = 0.9171
+
+
+    # Ajuste por garantía ofrecida
+    if tipo_garantia == "Garantía Material":
+        ajuste_garantia = 0.0116
+    elif tipo_garantia == "Garantía Personal":
+        ajuste_garantia = 0.4644
+    else:  # Sin garantía
+        ajuste_garantia = 0.9171
+
+    # Calcular la tasa final
+    tea = (
+        ajuste_tasa_referencial * 1
+        + ajuste_inflacion * 2
+        + ajuste_categoria * 1.000
+        + ajuste_garantia * 0.8571
+        + ajuste_score * 0.7143
+        + ajuste_monto * 0.5714
+        + ajuste_cuotas * 0.4286
+        + ajuste_profesion * 0.2857
+        + ajuste_edad * 0.1429
+    )
+
+    return round(tea, 4)
 
 def calcular_tna(tea):
     """
     Calcula la TNA (Tasa Nominal Anual) a partir de la TEA (Tasa Efectiva Anual).
     """
-    return (((1 + tea) ** (1 / 12) - 1) * 12) * (365 / 360)
+    tea = calcular_tea(tasa_referencial, inflacion, id_cat_cliente, tipo_garantia, score_crediticio, importe_desembolsado, p, id_profesion, edad)
+    tna = (((1 + tea) ** (1 / 12) - 1) * 12) * (365 / 360)
+    return tna
 
 def calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nombre_cliente, tipo_garantia, dias_periodo, dias_mes):
     """
@@ -34,6 +237,8 @@ def calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nomb
     - p (int): Número de cuotas.
     - nombre_cliente (str): Nombre del cliente.
     - tipo_garantia (str): Tipo de garantía ofrecida.
+    - dias_periodo (int): Número de días del período.
+    - dias_mes (int): Número de días del mes.
 
     Retorna:
     - DataFrame con el cronograma de pagos.
@@ -228,11 +433,11 @@ print("API Key:", sendgrid_api_key)  # Para asegurarte de que se cargó correcta
 
 ## Función para enviar el correo con la imagen adjunta
 
-def enviar_correo_con_imagen(correo_destinatario,correo_destino, asunto, cuerpo, cronograma_cuotas_df, monto_prestamo, tasa_interes_anual, num_cuotas, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen):
+def enviar_correo_con_imagen(correo_destinatario,correo_destino, asunto, cuerpo, cronograma_cuotas_df, importe_desembolsado, tasa_interes_anual, p, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen):
 
     ### Generar la imagen del cronograma
 
-    imagen_buffer = cronograma_a_imagen(cronograma_cuotas_df, monto_prestamo, tasa_interes_anual, num_cuotas, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen)
+    imagen_buffer = cronograma_a_imagen(cronograma_cuotas_df, importe_desembolsado, tasa_interes_anual, p, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen)
 
     ### Convertir la imagen a base64
 
@@ -302,23 +507,54 @@ def mostrar_curva_interes(cronograma_prestatario_df):
 
 #---------------------------------------------------------------------------------------------
 
-# LLAMADA A LAS FUNCIONES
-
-# Generar el cronograma de pagos
-
-# Datos de entrada
-fecha_desembolso = "29/01/2025"
-importe_desembolsado = 8500
-tea =  1.7049
-p = 30 #Número de cuotas
+# DATOS DE ENTRADA
+# Datos del prestatario:
 nombre_cliente = "Marcos Leonardo Ronceros Ramírez"
-tipo_garantia = "Garantía Personal"
-td = 0 / 100 # 0.00115 en los bancos
+id_profesion = "ingeniero"  # Profesión del cliente
+id_cat_cliente = 3  # Categoría del cliente (C+)
+score_crediticio = 700  # Score de Sentinel o Equifax
+edad = 30  # Edad del cliente
 
+# Datos del préstamo:
+importe_desembolsado = 8500
+p = 24 #Número de cuotas
+fecha_desembolso = "27/01/2025"
+tipo_garantia = "Garantía Personal"
+
+# Constantes:
+tasa_referencial = 4.75 / 100  # BRCP
+inflacion = 2.45 / 100  # Inflación actual en porcentaje
+td = 0 / 100 # 0.00115 en los bancos
 dias_periodo = 32
 dias_mes = 31
 
-cronograma_prestatario_df, resumen_cronograma_prestatario_df = calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nombre_cliente, tipo_garantia, dias_periodo, dias_mes)
+
+# Calcular la tasa de interés
+tea = calcular_tea(
+    tasa_referencial,
+    inflacion,
+    id_cat_cliente,
+    tipo_garantia,
+    score_crediticio,
+    importe_desembolsado,
+    p,
+    id_profesion,
+    edad
+)
+print(f"La tasa de interés asignada es: {tea}")
+
+cronograma_prestatario_df, resumen_cronograma_prestatario_df = calcular_cronograma(
+    fecha_desembolso,
+    importe_desembolsado,
+    tea,
+    td,
+    p,
+    nombre_cliente,
+    tipo_garantia,
+    dias_periodo,
+    dias_mes
+    )
+
 
 # Mostrar el resumen del préstamo
 print("Resumen del Préstamo:")
@@ -349,9 +585,9 @@ enviar_correo_con_imagen(
     asunto = 'Cronograma de Pagos del Préstamo',
     cuerpo = '<p>Adjunto encontrarás el cronograma de pagos del préstamo solicitado.</p>',
     cronograma_df = cronograma_prestatario_df,
-    monto_prestamo=monto_prestamo,
+    importe_desembolsado=importe_desembolsado,
     tasa_interes_anual=tasa_interes_anual,
-    num_cuotas=num_cuotas,
+    p=p,
     fecha_inicio_prestamo=fecha_inicio_prestamo,
     cuota_mensual=cuota_mensual,
     total_intereses=total_intereses,
