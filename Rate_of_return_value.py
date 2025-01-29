@@ -160,10 +160,10 @@ def calcular_tasa_rendimiento(
 
 # Datos de ejemplo
 
-id_niv_inversionista = 1  # Nivel del inversionista (Oro)
-monto_inversion = 1500  # Monto invertido
-num_meses = 4  # Número de cuotas del préstamo
-tipo_desembolso = "mensual"  # Tipo de desembolso: único o mensual
+id_niv_inversionista = 3  # Nivel del inversionista (Oro)
+monto_inversion = 100  # Monto invertido
+num_meses = 1  # Número de cuotas del préstamo
+tipo_desembolso = "único"  # Tipo de desembolso: único o mensual
 
 #Constantes
 inflacion = 2.45 / 100 # La inflación

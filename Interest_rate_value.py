@@ -204,13 +204,13 @@ def calcular_tasa_interes(tasa_referencial, inflacion, id_cat_cliente, garantia_
 #DATOS
 
 #Datos del préstamo
-monto_prestamo = 1500  # Monto del préstamo solicitado
-num_cuotas = 4  # Número de cuotas del préstamo
+monto_prestamo = 8500  # Monto del préstamo solicitado
+num_cuotas = 30  # Número de cuotas del préstamo
 garantia_prestamo = "Garantía Personal"  # Garantía ofrecida
 
 #Datos del prestatario
-id_cat_cliente = 2  # Categoría del cliente (C+)
-score_crediticio = 920  # Score de Sentinel o Equifax
+id_cat_cliente = 3  # Categoría del cliente (C+)
+score_crediticio = 700  # Score de Sentinel o Equifax
 edad = 30  # Edad del cliente
 id_profesion = "ingeniero"  # Profesión del cliente
 

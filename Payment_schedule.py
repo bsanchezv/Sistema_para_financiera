@@ -131,7 +131,7 @@ def calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nomb
 
 ## Función para convertir el cronograma a una imagen:
 
-def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df, total_intereses, p):
+def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df, total_intereses):
     """
     Convierte el cronograma a una imagen y la muestra con el resumen.
     """
@@ -163,21 +163,21 @@ def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatari
         colLabels=cronograma_prestatario_df.columns,
         cellLoc='center',
         loc='center',
-        bbox=[0.1, 0.25, 0.8, 0.3]  # [left, bottom, width, height]
+        bbox=[0.1, 0.25, 0.8, 0.1]  # [left, bottom, width, height]
     )
     tabla_cronograma.auto_set_font_size(False)
-    tabla_cronograma.set_fontsize(8)
-    tabla_cronograma.scale(1.0, 1.0)
+    tabla_cronograma.set_fontsize(10)
+    tabla_cronograma.scale(1.2, 1.2)
     
     # Agregar términos y condiciones en el pie de página
     terminos_condiciones = (
         f"- No incluye el ITF en caso de requerir.\n"
         f"- La tasa de interés es fija.\n"
-        f"- Cargo por pago atrasado (S/): {round(total_intereses * 0.01 / p, 2)} por día.\n"
+        f"- Cargo por pago atrasado (S/): {round(total_intereses * 0.033, 2)} por día.\n"
         f"- Máximo 7 días de espera después de vencida la cuota."
     )
     # Agregar los términos y condiciones al footer:
-    plt.text(0.5, 0.05, terminos_condiciones, ha='center', va='center', fontsize=8, wrap=True)
+    plt.text(0.5, 0.07, terminos_condiciones, ha='center', va='center', fontsize=9, wrap=True)
 
     # Ajustar diseño
     plt.tight_layout()
@@ -305,11 +305,11 @@ def mostrar_curva_interes(cronograma_prestatario_df):
 # Generar el cronograma de pagos
 
 # Datos de entrada
-fecha_desembolso = "30/09/2024"
-importe_desembolsado = 1500
-tea = 1.4575
-p = 4 #Número de cuotas
-nombre_cliente = "Leonardo"
+fecha_desembolso = "27/01/2025"
+importe_desembolsado = 31000
+tea =  230.90
+p = 60 #Número de cuotas
+nombre_cliente = "Marcos Leonardo Ronceros Ramírez"
 tipo_garantia = "Garantía Personal"
 td = 0 # 0.00115 en los bancos
 
@@ -326,10 +326,10 @@ print(cronograma_prestatario_df)
 # Mostrar la imagen antes de enviar el correo
 total_intereses = cronograma_prestatario_df["Interés Mensual (S/)"].sum()
 
-cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df,total_intereses, p)
+cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df,total_intereses)
 
 # Nombre del archivo
-nombre_archivo = "Cronograma_Prestatario_Prueba.xlsx"
+nombre_archivo = "Cronograma de cuotas - LR20250127.xlsx"
 
 # Exportar a Excel
 exportar_a_excel(cronograma_prestatario_df,resumen_cronograma_prestatario_df, nombre_archivo)
