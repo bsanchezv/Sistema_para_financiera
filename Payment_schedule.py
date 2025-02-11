@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import emoji
 import base64
 
-#from io import BytesIO
+from io import BytesIO
 #from sendgrid import SendGridAPIClient
 #from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
 from dotenv import load_dotenv
@@ -170,7 +170,7 @@ def calcular_tea(tasa_referencial, inflacion, id_cat_cliente, tipo_garantia, sco
         ajuste_cuotas = 0.8474
     elif 29 <= p < 30:
         ajuste_cuotas = 0.8823
-    elif 30 <= p < 31:
+    elif 30 == p:
         ajuste_cuotas = 0.9171
     else:
         raise ValueError("El número de cuotas está fuera del rango permitido.")
@@ -299,7 +299,7 @@ def calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nomb
         cronograma.append({
             "N° Cuota": i,
             "Fecha de Pago": (fecha_desembolso + relativedelta(months=i)).strftime('%d/%m/%Y'),
-            "Días del Periodo": dias_periodo,
+            #"Días del Periodo": dias_periodo,
             "Saldo (S/)": round(saldo if saldo > 0 else 0, 2),
             "Interés Mensual (S/)": round(interes_mensual, 2),
             "Seguro Desgravamen (S/)": round(seguro_desgravamen_mensual, 2),
@@ -338,7 +338,7 @@ def calcular_cronograma(fecha_desembolso, importe_desembolsado, tea, td, p, nomb
 
 ## Función para convertir el cronograma a una imagen:
 
-def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df, total_intereses):
+def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df, cargo_pago_atrasado):
     """
     Convierte el cronograma a una imagen y la muestra con el resumen.
     """
@@ -370,7 +370,7 @@ def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatari
         colLabels=cronograma_prestatario_df.columns,
         cellLoc='center',
         loc='center',
-        bbox=[0.1, 0.25, 0.8, 0.1]  # [left, bottom, width, height]
+        bbox=[0.1, 0.25, 0.8, 0.2]  # [left, bottom, width, height]
     )
     tabla_cronograma.auto_set_font_size(False)
     tabla_cronograma.set_fontsize(10)
@@ -380,7 +380,7 @@ def cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatari
     terminos_condiciones = (
         f"- No incluye el ITF en caso de requerir.\n"
         f"- La tasa de interés es fija.\n"
-        f"- Cargo por pago atrasado (S/): {round(total_intereses * 0.033, 2)} por día.\n"
+        f"- Cargo por pago atrasado (S/):  {round(cargo_pago_atrasado, 2)} por día.\n"
         f"- Máximo 7 días de espera después de vencida la cuota."
     )
     # Agregar los términos y condiciones al footer:
@@ -417,108 +417,21 @@ def exportar_a_excel(cronograma_prestatario_df, resumen_cronograma_prestatario_d
         cronograma_prestatario_df.to_excel(writer, sheet_name="Cronograma", index=False)
 
     print(f"Archivo Excel '{nombre_archivo}' generado exitosamente.")
-#---------------------------------------------------------------------------------------------
-
-# ENVIAR LA IMAGEN DEL CRONOGRAMA DE PAGOS POR CORREO (SENDGRID)
-
-## Cargar variables de entorno desde el archivo .env
-
-load_dotenv()
-
-## Obtener la API key de SendGrid
-
-sendgrid_api_key = os.getenv('SENDGRID_API_KEY')
-
-print("API Key:", sendgrid_api_key)  # Para asegurarte de que se cargó correctamente
-
-## Función para enviar el correo con la imagen adjunta
-
-def enviar_correo_con_imagen(correo_destinatario,correo_destino, asunto, cuerpo, cronograma_cuotas_df, importe_desembolsado, tasa_interes_anual, p, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen):
-
-    ### Generar la imagen del cronograma
-
-    imagen_buffer = cronograma_a_imagen(cronograma_cuotas_df, importe_desembolsado, tasa_interes_anual, p, fecha_inicio_prestamo, cuota_mensual, total_intereses, total_a_pagar, mostrar_imagen)
-
-    ### Convertir la imagen a base64
-
-    encoded_image = base64.b64encode(imagen_buffer.getvalue()).decode()
-
-    ### Crear el cuerpo del mensaje
-
-    if sendgrid_api_key is None:
-        print("Error: No se pudo cargar la API Key.")
-    else:   
-        message = Mail(
-            from_email=correo_destinatario,
-            to_emails=correo_destino,
-            subject=asunto,
-            html_content=cuerpo
-        )
-
-    ### Crear el adjunto de imagen
-
-    attachment = Attachment(
-        FileContent(encoded_image),
-        FileName('cronograma.png'),
-        FileType('image/png'),
-        Disposition('attachment')
-    )
-
-    ### Adjuntar la imagen al correo
-
-    message.add_attachment(attachment)
-
-    ### Enviar el correo usando SendGrid
-
-    try:
-        sg = SendGridAPIClient(sendgrid_api_key)
-        response = sg.send(message)
-        print(emoji.emojize(f"Correo enviado exitosamente con el estado: {response.status_code} :check_mark_button:"))
-    except Exception as e:
-        print(emoji.emojize(f"Error al enviar el correo: {e} :no_entry:"))
-
-
-def mostrar_curva_interes(cronograma_prestatario_df):
-    """
-    Muestra la curva del interés a lo largo de las cuotas, asegurando que se muestren todas las cuotas en el eje X.
-    """
-    # Extraer los datos
-    cuotas = cronograma_prestatario_df["N° Cuota"]
-    intereses = cronograma_prestatario_df["Interés Mensual (S/)"]
-
-    # Crear la figura y el eje
-    plt.figure(figsize=(10, 6))
-    plt.plot(cuotas, intereses, marker='o', label="Interés mensual (S/)", color='b')
-
-    # Configurar el gráfico
-    plt.title("Curva del Interés Mensual")
-    plt.xlabel("N° de Cuota")
-    plt.ylabel("Interés Mensual (S/)")
-    plt.grid(True, linestyle='--', alpha=0.6)
-    plt.legend()
-
-    # Configurar los ticks del eje X para mostrar todas las cuotas
-    plt.xticks(ticks=cuotas, labels=cuotas, rotation=45)
-
-    plt.tight_layout()
-
-    # Mostrar la curva
-    plt.show()
 
 #---------------------------------------------------------------------------------------------
 
 # DATOS DE ENTRADA
 # Datos del prestatario:
-nombre_cliente = "Marcos Leonardo Ronceros Ramírez"
+nombre_cliente = "Nombre cliente"
 id_profesion = "ingeniero"  # Profesión del cliente
 id_cat_cliente = 3  # Categoría del cliente (C+)
 score_crediticio = 700  # Score de Sentinel o Equifax
 edad = 30  # Edad del cliente
 
 # Datos del préstamo:
-importe_desembolsado = 8500
-p = 24 #Número de cuotas
-fecha_desembolso = "27/01/2025"
+importe_desembolsado = 600
+p = 1 #Número de cuotas
+fecha_desembolso = "10/02/2025"
 tipo_garantia = "Garantía Personal"
 
 # Constantes:
@@ -565,38 +478,13 @@ print("\nCronograma de Pagos:")
 print(cronograma_prestatario_df)
 
 # Mostrar la imagen antes de enviar el correo
-total_intereses = cronograma_prestatario_df["Interés Mensual (S/)"].sum()
-
-cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df,total_intereses)
+cargo_pago_atrasado = cronograma_prestatario_df["Interés Mensual (S/)"].sum() / (cronograma_prestatario_df["N° Cuota"].iloc[-1] * 31)
+cronograma_a_imagen(cronograma_prestatario_df, resumen_cronograma_prestatario_df,cargo_pago_atrasado)
 
 # Nombre del archivo
-nombre_archivo = "Cronograma de cuotas - LR20250127.xlsx"
+nombre_archivo = "Cronograma de cuotas - LR20250210.xlsx"
 
 # Exportar a Excel
 exportar_a_excel(cronograma_prestatario_df,resumen_cronograma_prestatario_df, nombre_archivo)
 
-
-# Enviar el correo con el cronograma como imagen adjunta
-
-enviar_correo_con_imagen(
-
-    correo_destinatario = 'prestamouniversal.pe@outlook.com',
-    correo_destino = 'barbaragabriela2820@gmail.com',
-    asunto = 'Cronograma de Pagos del Préstamo',
-    cuerpo = '<p>Adjunto encontrarás el cronograma de pagos del préstamo solicitado.</p>',
-    cronograma_df = cronograma_prestatario_df,
-    importe_desembolsado=importe_desembolsado,
-    tasa_interes_anual=tasa_interes_anual,
-    p=p,
-    fecha_inicio_prestamo=fecha_inicio_prestamo,
-    cuota_mensual=cuota_mensual,
-    total_intereses=total_intereses,
-    total_a_pagar=total_a_pagar,
-    mostrar_imagen=False
-
-)
-
-
-# Mostrar la curva del interés
-mostrar_curva_interes(cronograma_prestatario_df)
 

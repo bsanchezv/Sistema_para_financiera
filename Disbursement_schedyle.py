@@ -1,5 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import emoji
+
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
@@ -23,7 +25,7 @@ def calcular_trea(inflacion, id_niv_inversionista, monto_inversion, num_meses, t
     elif id_niv_inversionista == 1:  # Nivel Diamante
         ajuste_nivel = 0.0755
     else:
-        raise ValueError("El nivel del inversionista no es válido.")
+        raise ValueError("🚨 El nivel del inversionista no es válido.")
 
     # Ajuste por monto de la inversión
     if monto_inversion > 10352:
@@ -81,7 +83,7 @@ def calcular_trea(inflacion, id_niv_inversionista, monto_inversion, num_meses, t
     elif 100 <= monto_inversion < 427:
         ajuste_monto = 0.0755
     else:  # 0.01 <= monto_prestamo < 30
-        raise ValueError("El monto debe ser mayor o igual a S/100.")
+        raise ValueError("🚨 El monto debe ser mayor o igual a S/100.")
 
     # Ajuste por número de desembolsos o cuotas del préstamo
     if 1 <= num_meses < 2:
@@ -139,7 +141,7 @@ def calcular_trea(inflacion, id_niv_inversionista, monto_inversion, num_meses, t
     elif 30 <= num_meses < 31:
         ajuste_desembolsos = 0.0000
     else:
-        raise ValueError("El número de desembolsos está fuera del rango permitido.")
+        raise ValueError("🚨 El número de desembolsos está fuera del rango permitido.")
 
     # Ajuste por tipo de desembolso
     if tipo_desembolso == "único":
@@ -147,7 +149,7 @@ def calcular_trea(inflacion, id_niv_inversionista, monto_inversion, num_meses, t
     elif tipo_desembolso == "mensual":
         ajuste_tipo_desembolso = 0.0000
     else:
-        raise ValueError("El tipo de desembolso no es válido.")
+        raise ValueError("🚨 El tipo de desembolso no es válido.")
 
     # Calcular la tasa final
     trea = (
@@ -177,15 +179,9 @@ def generar_cronograma_inversionista(monto_inversion, trea, num_meses, tipo_dese
     """
 
     # Validaciones de entrada
-    if not (isinstance(monto_inversion, (int, float)) and monto_inversion >= 0):
-        raise ValueError("El monto de inversión debe ser mayor a 0.")
     if not(0 < trea <= 1):
         raise ValueError("La TREA debe ser un número mayor a 0 y menor a 1.")
-    if num_meses <= 0 or not isinstance(num_meses, int):
-        raise ValueError("El número de meses debe ser un entero positivo.")
-    if tipo_desembolso not in ["único", "mensual"]:
-        raise ValueError("El tipo de desembolso debe ser 'único' o 'mensual'.")
-    
+
     # Calcular la TREM
     trem = calcular_trem(trea)
     
@@ -323,7 +319,7 @@ def cronograma_a_imagen(cronograma_inversionista_df, resumen_cronograma_inversio
         colLabels=cronograma_inversionista_df.columns,
         cellLoc='center',
         loc='center',
-        bbox=[0.03, 0.4, 0.95, 0.1]  # [left, bottom, width, height]
+        bbox=[0.03, 0.3, 0.95, 0.25]  # [left, bottom, width, height]
     )
     tabla_cronograma.auto_set_font_size(False)
     tabla_cronograma.set_fontsize(10)
@@ -337,8 +333,6 @@ def exportar_a_excel(cronograma_inversionista_df, resumen_cronograma_inversionis
     """
     Exporta el cronograma y el resumen a un archivo de Excel con el nombre especificado.
     """
-    # Agregar la columna "Estado de la cuota" al cronograma
-    cronograma_inversionista_df["Estado del desembolso"] = "Pendiente"
 
     with pd.ExcelWriter(nombre_archivo, engine='xlsxwriter') as writer:
         # Exportar el resumen al primer sheet
@@ -356,14 +350,14 @@ def exportar_a_excel(cronograma_inversionista_df, resumen_cronograma_inversionis
 
 # Datos del inversionista:
 id_niv_inversionista = 1  # Nivel del inversionista (Oro)
-nombre_inversionista = "Jesus A. Maurtua B."
-categoria_inversionista = "Platino"
+nombre_inversionista = "Nombre inversionista"
+categoria_inversionista = "Diamante"
 
 # Datos de la inversión:
-monto_inversion = 463.57 # Monto invertido
+monto_inversion = 600 # Monto invertido
 num_meses = 1  # Número de desembolsos
 tipo_desembolso = "único"  # Tipo de desembolso ("único" o "mensual")
-fecha_inicio_inversion = "28/01/2025"  # Fecha de inicio
+fecha_inicio_inversion = "10/02/2025"  # Fecha de inicio
 
 # Constantes:
 inflacion = 2.45 / 100 # La inflación
@@ -402,7 +396,8 @@ print(cronograma_inversionista_df)
 cronograma_a_imagen(cronograma_inversionista_df, resumen_cronograma_inversionista_df)
 
 # Nombre del archivo
-nombre_archivo = "Cronograma de desembolsos - BS20250128.xlsx"
-
+nombre_archivo = "Cronograma de desembolsos - LR20250210.xlsx"
+# Agregar la columna "Estado del desembolso" solo para el archivo de Excel
+cronograma_inversionista_df["Estado del desembolso"] = "Pendiente"
 # Exportar a Excel
 exportar_a_excel(cronograma_inversionista_df, resumen_cronograma_inversionista_df, nombre_archivo)
