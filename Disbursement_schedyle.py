@@ -319,7 +319,7 @@ def cronograma_a_imagen(cronograma_inversionista_df, resumen_cronograma_inversio
         colLabels=cronograma_inversionista_df.columns,
         cellLoc='center',
         loc='center',
-        bbox=[0.03, 0.3, 0.95, 0.25]  # [left, bottom, width, height]
+        bbox=[0.03, 0.15, 0.95, 0.4]  # [left, bottom, width, height]
     )
     tabla_cronograma.auto_set_font_size(False)
     tabla_cronograma.set_fontsize(10)
@@ -349,15 +349,15 @@ def exportar_a_excel(cronograma_inversionista_df, resumen_cronograma_inversionis
 #---------------------------------------------------------------------------------------------
 
 # Datos del inversionista:
-id_niv_inversionista = 1  # Nivel del inversionista (Oro)
-nombre_inversionista = "Nombre inversionista"
-categoria_inversionista = "Diamante"
+id_niv_inversionista = 3  # Nivel del inversionista (Oro)
+nombre_inversionista = "Edwin N. Huacchillo T."
+categoria_inversionista = "Oro"
 
 # Datos de la inversión:
-monto_inversion = 600 # Monto invertido
+monto_inversion =200 # Monto invertido
 num_meses = 1  # Número de desembolsos
 tipo_desembolso = "único"  # Tipo de desembolso ("único" o "mensual")
-fecha_inicio_inversion = "10/02/2025"  # Fecha de inicio
+fecha_inicio_inversion = "12/03/2025"  # Fecha de inicio
 
 # Constantes:
 inflacion = 2.45 / 100 # La inflación
@@ -396,7 +396,7 @@ print(cronograma_inversionista_df)
 cronograma_a_imagen(cronograma_inversionista_df, resumen_cronograma_inversionista_df)
 
 # Nombre del archivo
-nombre_archivo = "Cronograma de desembolsos - LR20250210.xlsx"
+nombre_archivo = "Cronograma de desembolsos - LR20250312.xlsx"
 # Agregar la columna "Estado del desembolso" solo para el archivo de Excel
 cronograma_inversionista_df["Estado del desembolso"] = "Pendiente"
 # Exportar a Excel
